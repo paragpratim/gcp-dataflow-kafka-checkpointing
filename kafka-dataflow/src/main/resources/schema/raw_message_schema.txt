@@ -1,0 +1,12 @@
+[
+  {
+    "mode":"NULLABLE",
+    "name":"raw_message",
+    "type":"STRING"
+  },
+  {
+    "mode":"NULLABLE",
+    "name":"kafka_topic",
+    "type":"STRING"
+  }
+]
