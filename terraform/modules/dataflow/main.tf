@@ -79,7 +79,7 @@ resource "google_bigquery_dataset" "datasets" {
   # Access controls
   access {
     role          = "OWNER"
-    user_by_email = google_service_account.contract_service_account.email
+    user_by_email = google_service_account.dataflow_service_account.email
   }
 
   # Domain read-only access
@@ -99,6 +99,6 @@ resource "google_bigquery_dataset" "datasets" {
 
   depends_on = [
     google_project_service.required_apis,
-    google_service_account.contract_service_account
+    google_service_account.dataflow_service_account
   ]
 }
