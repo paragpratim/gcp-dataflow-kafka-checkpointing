@@ -10,12 +10,6 @@ variable "region" {
   default     = ""
 }
 
-variable "datastore_database_id" {
-  description = "The datastore database ID for Contract Application"
-  type        = string
-  default     = ""
-}
-
 variable "my_domain" {
   description = "The domain to grant IAP access"
   type        = string

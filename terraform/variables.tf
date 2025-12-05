@@ -10,6 +10,12 @@ variable "region" {
   default     = ""
 }
 
+variable "my_domain" {
+  description = "The domain to grant IAP access"
+  type        = string
+  default     = ""
+}
+
 variable "bigquery_datasets" {
   description = "List of BigQuery dataset IDs to create"
   type        = list(string)

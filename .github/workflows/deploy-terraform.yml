@@ -28,6 +28,7 @@ env:
   REGION: europe-west4
   TF_VAR_project_id: ${{ secrets.DATAFLOW_TEST_PROJECT_ID }}
   TF_VAR_region: europe-west4
+  TF_VAR_my_domain: ${{ secrets.MY_DOMAIN }}
 
 jobs:
   terraform:
