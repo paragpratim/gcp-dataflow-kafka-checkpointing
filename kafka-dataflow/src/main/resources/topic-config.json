@@ -2,7 +2,7 @@
   "topicConfigs": [
     {
       "topicName": "test-topic",
-      "datasetName": "test-topic"
+      "datasetName": "test_topic"
     }
   ]
 }
