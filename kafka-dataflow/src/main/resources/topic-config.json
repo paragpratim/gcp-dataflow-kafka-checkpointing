@@ -1,12 +1,8 @@
 {
   "topicConfigs": [
     {
-      "topicName": "topic1",
-      "datasetName": "topic1"
-    },
-    {
-      "topicName": "topic2",
-      "datasetName": "topic2"
+      "topicName": "test-topic",
+      "datasetName": "test-topic"
     }
   ]
 }
