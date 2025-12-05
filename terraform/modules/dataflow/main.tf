@@ -120,3 +120,35 @@ resource "google_compute_firewall" "dataflow_internal" {
 
   description = "Allow Dataflow worker-to-worker traffic (streaming TCP 12345, batch TCP 12346); scoped to Dataflow VMs via tag"
 }
+
+# Create a Cloud Router and Cloud NAT so workers without external IPs can egress
+resource "google_compute_router" "dataflow_router" {
+  count   = var.create_nat ? 1 : 0
+  name    = "dataflow-router-${var.project_id}"
+  region  = var.region
+  network = google_compute_network.dataflow_vpc.name
+}
+
+resource "google_compute_router_nat" "dataflow_nat" {
+  count = var.create_nat ? 1 : 0
+
+  name   = var.nat_name != "" ? var.nat_name : "dataflow-nat-${var.project_id}"
+  router = google_compute_router.dataflow_router[0].name
+  region = var.region
+
+  nat_ip_allocate_option             = "AUTO_ONLY"
+  source_subnetwork_ip_ranges_to_nat = "LIST_OF_SUBNETWORKS"
+
+  # Configure NAT to provide egress for the specific subnet
+  subnetwork {
+    name                    = google_compute_subnetwork.dataflow_subnet.name
+    source_ip_ranges_to_nat = ["ALL_IP_RANGES"]
+  }
+
+  log_config {
+    enable = false
+    filter = "ERRORS_ONLY"
+  }
+
+  depends_on = [google_compute_subnetwork.dataflow_subnet]
+}

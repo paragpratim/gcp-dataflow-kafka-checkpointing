@@ -47,3 +47,15 @@ variable "subnet_cidr" {
   type        = string
   default     = "10.10.0.0/20"
 }
+
+variable "create_nat" {
+  description = "Whether to create a Cloud NAT for the subnet to provide outbound internet access without external IPs"
+  type        = bool
+  default     = true
+}
+
+variable "nat_name" {
+  description = "Optional name for the Cloud NAT. If empty a default will be used."
+  type        = string
+  default     = ""
+}

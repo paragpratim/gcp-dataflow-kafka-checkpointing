@@ -56,3 +56,13 @@ output "subnet_id" {
   description = "ID of the created subnetwork"
   value       = google_compute_subnetwork.dataflow_subnet.id
 }
+
+output "router_name" {
+  description = "Name of the Cloud Router (if created)"
+  value       = var.create_nat ? google_compute_router.dataflow_router[0].name : ""
+}
+
+output "nat_name" {
+  description = "Name of the Cloud NAT (if created)"
+  value       = var.create_nat ? google_compute_router_nat.dataflow_nat[0].name : ""
+}
