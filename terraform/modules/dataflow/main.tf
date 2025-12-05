@@ -102,3 +102,21 @@ resource "google_bigquery_dataset" "datasets" {
     google_service_account.dataflow_service_account
   ]
 }
+
+# Create internal firewall rule for Dataflow
+resource "google_compute_firewall" "dataflow_internal" {
+  name    = "dataflow-allow-internal-${var.project_id}"
+  network = google_compute_network.dataflow_vpc.name
+
+  direction   = "INGRESS"
+  priority    = 1000
+  source_tags = ["dataflow"]
+  target_tags = ["dataflow"]
+
+  allow {
+    protocol = "tcp"
+    ports    = ["12345", "12346"]
+  }
+
+  description = "Allow Dataflow worker-to-worker traffic (streaming TCP 12345, batch TCP 12346); scoped to Dataflow VMs via tag"
+}
