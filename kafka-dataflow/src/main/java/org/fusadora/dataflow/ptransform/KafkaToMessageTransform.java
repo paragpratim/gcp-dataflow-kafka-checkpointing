@@ -39,8 +39,10 @@ public class KafkaToMessageTransform extends PTransform<@NotNull PBegin, @NotNul
                 topic, "Get from Kafka [" + topic + "]");
 
         return kafkaRecordPCollection.apply("Convert to String", ParDo.of(new DoFn<KafkaRecord<String, String>, String>() {
+
             @DoFn.ProcessElement
             public void processElement(ProcessContext processContext) {
+                LOG.info("Element received in KafkaToMessageTransform DoFn processElement{}", Objects.requireNonNull(processContext.element()).getKV().getValue());
                 processContext.output(Objects.requireNonNull(processContext.element()).getKV().getValue());
             }
         }));

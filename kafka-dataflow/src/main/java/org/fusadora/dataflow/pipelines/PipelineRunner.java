@@ -1,5 +1,6 @@
 package org.fusadora.dataflow.pipelines;
 
+import org.apache.beam.runners.direct.DirectRunner;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
 import org.fusadora.dataflow.dataflowoptions.DataflowOptions;

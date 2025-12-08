@@ -15,8 +15,8 @@ public class KafkaRandomProducer {
     private static final Logger LOGGER = LoggerFactory.getLogger(KafkaRandomProducer.class);
 
     public static void main(String[] args) throws Exception {
-        String brokers = "localhost:9092";
-        String topic = "test-topic";
+        String brokers = "pkc-ewzgj.europe-west4.gcp.confluent.cloud:9092";
+        String topic = "test_df";
         int ratePerSec = 10; // messages per second
 
         for (int i = 0; i < args.length; i++) {
@@ -40,7 +40,14 @@ public class KafkaRandomProducer {
         props.put("bootstrap.servers", brokers);
         props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
         props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
-        props.put("acks", "1");
+        props.put("security.protocol", "SASL_SSL");
+        props.put("sasl.jaas.config", "org.apache.kafka.common.security.plain.PlainLoginModule required username='D4JH6JHRZV5HATA3' password='cflt5bfS4vOg6/3uIN7eQ/oQH0J0ZSOVz0nypLIJF2e1RYRn4zIjm2LPuUTG0PxA';");
+        props.put("sasl.mechanism", "PLAIN");
+        props.put("client.dns.lookup", "use_all_dns_ips");
+        props.put("session.timeout.ms", "45000");
+        props.put("acks", "all");
+        props.put("client.id", "kafka-random-producer-" + UUID.randomUUID().toString());
+
 
         final Producer<String, String> producer = new KafkaProducer<>(props);
         final AtomicBoolean running = new AtomicBoolean(true);

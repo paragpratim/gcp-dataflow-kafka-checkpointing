@@ -22,8 +22,9 @@ public class OutputServiceImpl implements OutputService {
                 BigQueryIO.writeTableRows().to(bqTableName).withSchema(bqTableSchema)
                         .withWriteDisposition(writeDisposition)
                         .withCreateDisposition(BigQueryIO.Write.CreateDisposition.CREATE_IF_NEEDED)
-                        .withMethod(BigQueryIO.Write.Method.FILE_LOADS)
-                        .withTriggeringFrequency(Duration.standardMinutes(10))
+                        .withWriteDisposition(BigQueryIO.Write.WriteDisposition.WRITE_APPEND)
+                        .withMethod(BigQueryIO.Write.Method.STORAGE_WRITE_API)
+                        .withTriggeringFrequency(Duration.standardMinutes(1))
                         .withTimePartitioning(new TimePartitioning().setType(partitionType)));
     }
 }
