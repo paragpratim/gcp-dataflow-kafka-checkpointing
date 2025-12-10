@@ -39,7 +39,6 @@ public class InputServiceImpl implements InputService {
                 .withConsumerConfigUpdates(kafkaConsumerConfig)
                 .withKeyDeserializer(StringDeserializer.class)
                 .withValueDeserializer(StringDeserializer.class)
-                .withReadCommitted()
                 .commitOffsetsInFinalize());
     }
 }
