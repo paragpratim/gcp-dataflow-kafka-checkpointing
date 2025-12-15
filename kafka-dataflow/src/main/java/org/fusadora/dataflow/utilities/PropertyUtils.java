@@ -30,6 +30,10 @@ public class PropertyUtils {
     public static final String KAFKA_NODE_HOST_2 = "kafka.node.host.2";
     public static final String KAFKA_NODE_HOST_3 = "kafka.node.host.3";
     public static final String KAFKA_TOPICS = "kafka.topics";
+    public static final String KAFKA_CONSUMER_CLIENT_ID = "kafka.consumer.client.id";
+    public static final String KAFKA_CONSUMER_GROUP_ID = "kafka.consumer.group.id";
+    public static final String KAFKA_SASL_USERNAME = "kafka.sasl.username";
+    public static final String KAFKA_SASL_PASSWORD = "kafka.sasl.password";
 
 
     private static final Logger LOG = LoggerFactory.getLogger(PropertyUtils.class);
