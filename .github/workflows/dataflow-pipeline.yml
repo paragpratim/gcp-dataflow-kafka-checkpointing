@@ -25,6 +25,7 @@ on:
 env:
   PROJECT_ID: ${{ secrets.DATAFLOW_TEST_PROJECT_ID }}
   REGION: europe-west4
+  ENVIRONMENT: ${{ github.event.inputs.environment || 'dev' }}
 
 jobs:
   build-and-run-dataflow:
@@ -57,8 +58,8 @@ jobs:
 
       - name: Substitute environment variables in config.properties
         run: |
-          envsubst < kafka-dataflow/profiles/${{ github.event.inputs.environment }}/config.properties > kafka-dataflow/profiles/${{ github.event.inputs.environment }}/config.properties.out
-          mv kafka-dataflow/profiles/${{ github.event.inputs.environment }}/config.properties.out kafka-dataflow/profiles/${{ github.event.inputs.environment }}/config.properties
+          envsubst < kafka-dataflow/profiles/${{ env.ENVIRONMENT }}/config.properties > kafka-dataflow/profiles/${{ env.ENVIRONMENT }}/config.properties.out
+          mv kafka-dataflow/profiles/${{ env.ENVIRONMENT }}/config.properties.out kafka-dataflow/profiles/${{ env.ENVIRONMENT }}/config.properties
         env:
           PROJECT_NAME: ${{ secrets.DATAFLOW_TEST_PROJECT_ID }}
           BUCKET_DATAFLOW_STAGING: dataflow-staging-${{ secrets.DATAFLOW_TEST_PROJECT_ID }}
@@ -68,7 +69,7 @@ jobs:
 
       - name: Build Dataflow pipeline with Maven
         working-directory: kafka-dataflow
-        run: mvn clean package -DskipTests -P ${{ github.event.inputs.environment }}
+        run: mvn clean package -DskipTests -P ${{ env.ENVIRONMENT }}
 
       - name: Configure Docker for Artifact Registry
         run: |
