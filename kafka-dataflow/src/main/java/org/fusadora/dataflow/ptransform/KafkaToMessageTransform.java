@@ -35,7 +35,7 @@ public class KafkaToMessageTransform extends PTransform<@NotNull PBegin, @NotNul
     @Override
     public @NotNull PCollection<String> expand(PBegin input) {
         PCollection<KafkaRecord<String, String>> kafkaRecordPCollection = inputService.readFromKafka(input.getPipeline(),
-                PropertyUtils.getProperty(PropertyUtils.KAFKA_NODE_HOST_1),
+                PropertyUtils.getProperty(PropertyUtils.KAFKA_BROKER_HOST),
                 topic, "Get from Kafka [" + topic + "]");
 
         return kafkaRecordPCollection.apply("Convert to String", ParDo.of(new DoFn<KafkaRecord<String, String>, String>() {

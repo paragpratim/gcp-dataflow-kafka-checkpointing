@@ -1,0 +1,93 @@
+name: Build and Push Dataflow Image
+
+on:
+  push:
+    branches: [ main ]
+    paths: 
+      - 'kafka-dataflow/**'
+      - '.github/workflows/dataflow-pipeline.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'kafka-dataflow/**'
+      - '.github/workflows/dataflow-pipeline.yml'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Dataflow Environment to Deploy'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+        - dev
+        - prod
+
+env:
+  PROJECT_ID: ${{ secrets.DATAFLOW_TEST_PROJECT_ID }}
+  REGION: europe-west4
+
+jobs:
+  build-and-run-dataflow:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: 'projects/${{ secrets.DEPLOYMENT_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/${{ secrets.WIF_POOL_NAME }}/providers/${{ secrets.WIF_PROVIDER_NAME }}'
+          service_account: ${{ secrets.DEPLOYMENT_SVC }}
+          audience: ${{ secrets.WIF_AUDIENCE }}
+          project_id: ${{ env.PROJECT_ID }}  # Set target project directly in auth
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Substitute environment variables in config.properties
+        run: |
+          envsubst < kafka-dataflow/profiles/${{ github.event.inputs.environment }}/config.properties > kafka-dataflow/profiles/${{ github.event.inputs.environment }}/config.properties.out
+          mv kafka-dataflow/profiles/${{ github.event.inputs.environment }}/config.properties.out kafka-dataflow/profiles/${{ github.event.inputs.environment }}/config.properties
+        env:
+          PROJECT_NAME: ${{ secrets.DATAFLOW_TEST_PROJECT_ID }}
+          BUCKET_DATAFLOW_STAGING: dataflow-staging-${{ secrets.DATAFLOW_TEST_PROJECT_ID }}
+          KAFKA_BROKER_HOST: ${{ secrets.KAFKA_BROKER_HOST }}
+          KAFKA_SASL_USERNAME: ${{ secrets.KAFKA_SASL_USERNAME }}
+          KAFKA_SASL_PASSWORD: ${{ secrets.KAFKA_SASL_PASSWORD }}
+
+      - name: Build Dataflow pipeline with Maven
+        working-directory: kafka-dataflow
+        run: mvn clean package -DskipTests -P ${{ github.event.inputs.environment }}
+
+      - name: Configure Docker for Artifact Registry
+        run: |
+          gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      - name: Build Docker image for Dataflow Flex Template
+        working-directory: kafka-dataflow
+        run: |
+          IMAGE_NAME=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/dataflow-artifacts/kafka-dataflow:latest
+          docker build -t "$IMAGE_NAME" .
+          echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_ENV
+
+      - name: Push Docker image to Artifact Registry
+        run: |
+          docker push "$IMAGE_NAME"
+
+      - name: Output Docker image information
+        run: |
+          echo "Docker image built and pushed: $IMAGE_NAME"
+          gcloud artifacts docker images list ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/dataflow-artifacts
+
+
+

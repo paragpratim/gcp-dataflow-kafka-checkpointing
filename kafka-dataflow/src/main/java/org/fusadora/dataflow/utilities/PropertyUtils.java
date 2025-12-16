@@ -26,9 +26,7 @@ public class PropertyUtils {
     public static final String BUCKET_DATAFLOW_STAGING = "bucket.dataflow.staging";
 
     //kafka
-    public static final String KAFKA_NODE_HOST_1 = "kafka.node.host.1";
-    public static final String KAFKA_NODE_HOST_2 = "kafka.node.host.2";
-    public static final String KAFKA_NODE_HOST_3 = "kafka.node.host.3";
+    public static final String KAFKA_BROKER_HOST = "kafka.broker.host";
     public static final String KAFKA_TOPICS = "kafka.topics";
     public static final String KAFKA_CONSUMER_CLIENT_ID = "kafka.consumer.client.id";
     public static final String KAFKA_CONSUMER_GROUP_ID = "kafka.consumer.group.id";

@@ -1,11 +1,11 @@
 package org.fusadora.dataflow.pipelines;
 
-import org.apache.beam.runners.direct.DirectRunner;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
 import org.fusadora.dataflow.dataflowoptions.DataflowOptions;
 import org.fusadora.dataflow.di.DataflowBusinessLogicModule;
 import org.fusadora.dataflow.di.GuiceInitialiser;
+import org.fusadora.dataflow.utilities.PropertyUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,6 +23,24 @@ public class PipelineRunner {
     public static void main(String[] args) {
 
         DataflowOptions options = PipelineOptionsFactory.fromArgs(args).withValidation().as(DataflowOptions.class);
+
+        options.setProject(PropertyUtils.getProperty(PropertyUtils.PROJECT_NAME));
+        options.setStagingLocation(PropertyUtils.getProperty(PropertyUtils.GCS_URL_HEADER)
+                .concat(PropertyUtils.getProperty(PropertyUtils.GCS_BUCKET_FILE_SEPARATOR))
+                .concat(PropertyUtils.getProperty(PropertyUtils.BUCKET_DATAFLOW_STAGING))
+                .concat(PropertyUtils.getProperty(PropertyUtils.GCS_BUCKET_FILE_SEPARATOR))
+                .concat("staging"));
+        options.setTempLocation(PropertyUtils.getProperty(PropertyUtils.GCS_URL_HEADER)
+                .concat(PropertyUtils.getProperty(PropertyUtils.GCS_BUCKET_FILE_SEPARATOR))
+                .concat(PropertyUtils.getProperty(PropertyUtils.BUCKET_DATAFLOW_STAGING))
+                .concat(PropertyUtils.getProperty(PropertyUtils.GCS_BUCKET_FILE_SEPARATOR))
+                .concat("temp"));
+        options.setTemplateLocation(PropertyUtils.getProperty(PropertyUtils.GCS_URL_HEADER)
+                .concat(PropertyUtils.getProperty(PropertyUtils.GCS_BUCKET_FILE_SEPARATOR))
+                .concat(PropertyUtils.getProperty(PropertyUtils.BUCKET_DATAFLOW_STAGING))
+                .concat(PropertyUtils.getProperty(PropertyUtils.GCS_BUCKET_FILE_SEPARATOR))
+                .concat("templates"));
+
         Pipeline pipeline = Pipeline.create(options);
 
         BasePipeline pipelineToRun = GuiceInitialiser.getGuiceInitialisedClass(new DataflowBusinessLogicModule(),
