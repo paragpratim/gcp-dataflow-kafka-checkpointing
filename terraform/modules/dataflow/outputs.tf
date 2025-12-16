@@ -67,7 +67,7 @@ output "nat_name" {
   value       = var.create_nat ? google_compute_router_nat.dataflow_nat[0].name : ""
 }
 
-output "artifact_registry_repository_url" {
-  description = "The URL of the created Artifact Registry repository."
-  value       = google_artifact_registry_repository.dataflow_artifact_registry.registry_uri
+output "artifact_registry_repository_id" {
+  description = "The resource name of the created Artifact Registry repository."
+  value       = google_artifact_registry_repository.dataflow_artifact_registry.id
 }
