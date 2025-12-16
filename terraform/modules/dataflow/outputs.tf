@@ -69,5 +69,5 @@ output "nat_name" {
 
 output "artifact_registry_repository_url" {
   description = "The URL of the created Artifact Registry repository."
-  value       = google_artifact_registry_repository.dataflow_artifact_registry.repository_url
+  value       = google_artifact_registry_repository.dataflow_artifact_registry.registry_uri
 }
