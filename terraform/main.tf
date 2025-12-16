@@ -11,3 +11,18 @@ module "dataflow" {
   artifact_registry_repository_id = var.artifact_registry_repository_id
   artifact_registry_format        = var.artifact_registry_format
 }
+
+module "dataflow_job" {
+  source = "./modules/dataflow_flex"
+
+  project_id                = var.project_id
+  region                    = var.region
+  flex_template_image       = "${var.region}-docker.pkg.dev/${var.project_id}/${module.dataflow.artifact_registry_repository_id}/kafka-dataflow:latest"
+  flex_template_bucket      = module.dataflow.dataflow_staging_bucket
+  pipeline_name             = "KafkaToBqPipeline"
+  dataflow_temp_location    = "gs://${module.dataflow.dataflow_staging_bucket}/temp"
+  dataflow_staging_location = "gs://${module.dataflow.dataflow_staging_bucket}/staging"
+  dataflow_subnetwork       = module.dataflow.subnet_self_link
+  dataflow_service_account  = module.dataflow.service_account_email
+  update_mode               = "drain"
+}
