@@ -54,12 +54,6 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
-      - name: Debug GCP Project and Dataflow API
-        run: |
-          gcloud config list
-          echo "PROJECT_ID=$PROJECT_ID"
-          gcloud services list --enabled --project=$PROJECT_ID | grep dataflow
-
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:

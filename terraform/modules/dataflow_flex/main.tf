@@ -13,6 +13,8 @@ resource "google_storage_bucket_object" "flex_template_spec" {
   bucket       = var.flex_template_bucket
   source       = local_file.flex_template_spec.filename
   content_type = "application/json"
+
+  depends_on = [local_file.flex_template_spec]
 }
 
 # Dataflow Flex Template Job Launch
