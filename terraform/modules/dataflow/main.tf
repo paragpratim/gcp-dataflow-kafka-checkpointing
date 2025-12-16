@@ -51,7 +51,6 @@ resource "google_storage_bucket" "dataflow_staging" {
 
 # Create Artifact Registry repository for Dataflow artifacts
 resource "google_artifact_registry_repository" "dataflow_artifact_registry" {
-  provider      = google
   project       = var.project_id
   location      = var.region
   repository_id = var.artifact_registry_repository_id
