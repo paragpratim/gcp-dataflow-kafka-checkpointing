@@ -12,6 +12,7 @@ resource "google_project_service" "required_apis" {
     "logging.googleapis.com",
     "storage.googleapis.com",
     "dataflow.googleapis.com",
+    "artifactregistry.googleapis.com",
   ])
 
   service            = each.value
@@ -24,6 +25,7 @@ resource "google_project_iam_member" "dataflow_service_account_roles" {
     "roles/bigquery.admin",
     "roles/storage.admin",
     "roles/dataflow.worker",
+    "roles/artifactregistry.reader",
   ])
 
   project    = var.project_id
@@ -44,6 +46,21 @@ resource "google_storage_bucket" "dataflow_staging" {
   # Set uniform bucket-level access
   uniform_bucket_level_access = true
 
+  depends_on = [google_project_service.required_apis]
+}
+
+# Create Artifact Registry repository for Dataflow artifacts
+resource "google_artifact_registry_repository" "dataflow_artifact_registry" {
+  provider      = google
+  project       = var.project_id
+  location      = var.region
+  repository_id = var.artifact_registry_repository_id
+  description   = "Artifact Registry for Dataflow artifacts"
+  format        = var.artifact_registry_format
+  labels = {
+    managed_by = "terraform"
+    project    = var.project_id
+  }
   depends_on = [google_project_service.required_apis]
 }
 

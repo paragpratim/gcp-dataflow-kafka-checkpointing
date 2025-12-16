@@ -48,6 +48,18 @@ variable "subnet_cidr" {
   default     = "10.10.0.0/20"
 }
 
+variable "artifact_registry_repository_id" {
+  description = "The name (ID) of the Artifact Registry repository to create."
+  type        = string
+  default     = "dataflow-artifacts"
+}
+
+variable "artifact_registry_format" {
+  description = "The format of the Artifact Registry repository (e.g., DOCKER, MAVEN, NPM, etc.)"
+  type        = string
+  default     = "DOCKER"
+}
+
 variable "create_nat" {
   description = "Whether to create a Cloud NAT for the subnet to provide outbound internet access without external IPs"
   type        = bool

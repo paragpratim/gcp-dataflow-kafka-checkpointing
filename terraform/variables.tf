@@ -29,3 +29,15 @@ variable "bigquery_datasets" {
     error_message = "Dataset names must start with a letter and contain only letters, numbers, and underscores."
   }
 }
+
+variable "artifact_registry_repository_id" {
+  description = "The name (ID) of the Artifact Registry repository to create."
+  type        = string
+  default     = "dataflow-artifacts"
+}
+
+variable "artifact_registry_format" {
+  description = "The format of the Artifact Registry repository (e.g., DOCKER, MAVEN, NPM, etc.)"
+  type        = string
+  default     = "DOCKER"
+}
