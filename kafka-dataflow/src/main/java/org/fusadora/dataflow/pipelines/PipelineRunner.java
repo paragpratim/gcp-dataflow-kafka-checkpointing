@@ -25,20 +25,20 @@ public class PipelineRunner {
         DataflowOptions options = PipelineOptionsFactory.fromArgs(args).withValidation().as(DataflowOptions.class);
 
         options.setProject(PropertyUtils.getProperty(PropertyUtils.PROJECT_NAME));
-        options.setStagingLocation(PropertyUtils.getProperty(PropertyUtils.GCS_URL_HEADER)
-                .concat(PropertyUtils.getProperty(PropertyUtils.GCS_BUCKET_FILE_SEPARATOR))
+        options.setStagingLocation(PropertyUtils.GCS_URL_HEADER
+                .concat(PropertyUtils.GCS_BUCKET_FILE_SEPARATOR)
                 .concat(PropertyUtils.getProperty(PropertyUtils.BUCKET_DATAFLOW_STAGING))
-                .concat(PropertyUtils.getProperty(PropertyUtils.GCS_BUCKET_FILE_SEPARATOR))
+                .concat(PropertyUtils.GCS_BUCKET_FILE_SEPARATOR)
                 .concat("staging"));
-        options.setTempLocation(PropertyUtils.getProperty(PropertyUtils.GCS_URL_HEADER)
-                .concat(PropertyUtils.getProperty(PropertyUtils.GCS_BUCKET_FILE_SEPARATOR))
+        options.setTempLocation(PropertyUtils.GCS_URL_HEADER
+                .concat(PropertyUtils.GCS_BUCKET_FILE_SEPARATOR)
                 .concat(PropertyUtils.getProperty(PropertyUtils.BUCKET_DATAFLOW_STAGING))
-                .concat(PropertyUtils.getProperty(PropertyUtils.GCS_BUCKET_FILE_SEPARATOR))
+                .concat(PropertyUtils.GCS_BUCKET_FILE_SEPARATOR)
                 .concat("temp"));
-        options.setTemplateLocation(PropertyUtils.getProperty(PropertyUtils.GCS_URL_HEADER)
-                .concat(PropertyUtils.getProperty(PropertyUtils.GCS_BUCKET_FILE_SEPARATOR))
+        options.setTemplateLocation(PropertyUtils.GCS_URL_HEADER
+                .concat(PropertyUtils.GCS_BUCKET_FILE_SEPARATOR)
                 .concat(PropertyUtils.getProperty(PropertyUtils.BUCKET_DATAFLOW_STAGING))
-                .concat(PropertyUtils.getProperty(PropertyUtils.GCS_BUCKET_FILE_SEPARATOR))
+                .concat(PropertyUtils.GCS_BUCKET_FILE_SEPARATOR)
                 .concat("templates"));
 
         Pipeline pipeline = Pipeline.create(options);
