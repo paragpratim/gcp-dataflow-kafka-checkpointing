@@ -143,11 +143,6 @@ jobs:
           steps.plan.outputs.exitcode == '2' &&
           (github.event.inputs.dataflow_flex_job == 'true' || github.event.inputs.dataflow_flex_job == true)
         run: |
-          gcloud auth activate-service-account --key-file="$GOOGLE_APPLICATION_CREDENTIALS"
-          gcloud config set project ${{ secrets.DATAFLOW_TEST_PROJECT_ID }}
-          gcloud config set compute/region europe-west4
-          gcloud config set dataflow/region europe-west4
-          # gcloud auth application-default login --cred-file="$GOOGLE_APPLICATION_CREDENTIALS" --quiet
           gcloud auth application-default set-quota-project ${{ env.PROJECT_ID }}
 
       - name: Terraform Apply
