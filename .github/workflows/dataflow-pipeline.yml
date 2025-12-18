@@ -25,7 +25,7 @@ on:
 env:
   PROJECT_ID: ${{ secrets.DATAFLOW_TEST_PROJECT_ID }}
   REGION: europe-west4
-  ENVIRONMENT: ${{ github.event.inputs.environment || 'dev' }}
+  ENVIRONMENT: ${{ github.event.inputs.environment || 'prd' }}
 
 jobs:
   build-and-run-dataflow:
