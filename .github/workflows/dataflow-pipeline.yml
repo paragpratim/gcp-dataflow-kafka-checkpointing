@@ -16,7 +16,7 @@ on:
       environment:
         description: 'Dataflow Environment to Deploy'
         required: true
-        default: 'dev'
+        default: 'prd'
         type: choice
         options:
         - dev
