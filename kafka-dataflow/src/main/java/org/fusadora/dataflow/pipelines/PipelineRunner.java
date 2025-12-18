@@ -26,17 +26,14 @@ public class PipelineRunner {
 
         options.setProject(PropertyUtils.getProperty(PropertyUtils.PROJECT_NAME));
         options.setStagingLocation(PropertyUtils.GCS_URL_HEADER
-                .concat(PropertyUtils.GCS_BUCKET_FILE_SEPARATOR)
                 .concat(PropertyUtils.getProperty(PropertyUtils.BUCKET_DATAFLOW_STAGING))
                 .concat(PropertyUtils.GCS_BUCKET_FILE_SEPARATOR)
                 .concat("staging"));
         options.setTempLocation(PropertyUtils.GCS_URL_HEADER
-                .concat(PropertyUtils.GCS_BUCKET_FILE_SEPARATOR)
                 .concat(PropertyUtils.getProperty(PropertyUtils.BUCKET_DATAFLOW_STAGING))
                 .concat(PropertyUtils.GCS_BUCKET_FILE_SEPARATOR)
                 .concat("temp"));
         options.setTemplateLocation(PropertyUtils.GCS_URL_HEADER
-                .concat(PropertyUtils.GCS_BUCKET_FILE_SEPARATOR)
                 .concat(PropertyUtils.getProperty(PropertyUtils.BUCKET_DATAFLOW_STAGING))
                 .concat(PropertyUtils.GCS_BUCKET_FILE_SEPARATOR)
                 .concat("templates"));
