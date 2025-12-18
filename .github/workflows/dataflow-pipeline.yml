@@ -20,7 +20,7 @@ on:
         type: choice
         options:
         - dev
-        - prod
+        - prd
 
 env:
   PROJECT_ID: ${{ secrets.DATAFLOW_TEST_PROJECT_ID }}
