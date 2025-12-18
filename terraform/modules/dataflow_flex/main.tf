@@ -11,7 +11,7 @@ resource "local_file" "flex_template_spec" {
 resource "google_storage_bucket_object" "flex_template_spec" {
   name         = "templates/kafka-to-bq-spec.json"
   bucket       = var.flex_template_bucket
-  source       = local_file.flex_template_spec.filename
+  content      = local_file.flex_template_spec.content
   content_type = "application/json"
 
   depends_on = [local_file.flex_template_spec]
