@@ -135,15 +135,15 @@ jobs:
               body: output
             });
 
-      - name: Set quota project for Dataflow Flex
-        if: |
-          github.ref == 'refs/heads/main' && 
-          (github.event_name == 'push' || 
-           (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'apply')) &&
-          steps.plan.outputs.exitcode == '2' &&
-          (github.event.inputs.dataflow_flex_job == 'true' || github.event.inputs.dataflow_flex_job == true)
-        run: |
-          gcloud auth application-default set-quota-project ${{ env.PROJECT_ID }}
+      # - name: Set quota project for Dataflow Flex
+      #   if: |
+      #     github.ref == 'refs/heads/main' && 
+      #     (github.event_name == 'push' || 
+      #      (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'apply')) &&
+      #     steps.plan.outputs.exitcode == '2' &&
+      #     (github.event.inputs.dataflow_flex_job == 'true' || github.event.inputs.dataflow_flex_job == true)
+      #   run: |
+      #     gcloud auth application-default set-quota-project ${{ env.PROJECT_ID }}
 
       - name: Terraform Apply
         if: |
