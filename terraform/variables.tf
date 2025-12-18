@@ -41,3 +41,9 @@ variable "artifact_registry_format" {
   type        = string
   default     = "DOCKER"
 }
+
+variable "submit_dataflow_flex_job" {
+  description = "Whether to submit the Dataflow Flex job (module.dataflow_job)."
+  type        = bool
+  default     = false
+}

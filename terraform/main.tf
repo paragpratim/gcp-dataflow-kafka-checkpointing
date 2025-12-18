@@ -15,6 +15,8 @@ module "dataflow" {
 module "dataflow_job" {
   source = "./modules/dataflow_flex"
 
+  count = var.submit_dataflow_flex_job ? 1 : 0
+
   project_id                = var.project_id
   region                    = var.region
   flex_template_image       = "${var.region}-docker.pkg.dev/${var.project_id}/${module.dataflow.artifact_registry_repository_id}/kafka-dataflow:latest"
