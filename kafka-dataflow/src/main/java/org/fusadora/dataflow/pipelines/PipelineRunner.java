@@ -33,10 +33,10 @@ public class PipelineRunner {
                 .concat(PropertyUtils.getProperty(PropertyUtils.BUCKET_DATAFLOW_STAGING))
                 .concat(PropertyUtils.GCS_BUCKET_FILE_SEPARATOR)
                 .concat("temp"));
-        options.setTemplateLocation(PropertyUtils.GCS_URL_HEADER
-                .concat(PropertyUtils.getProperty(PropertyUtils.BUCKET_DATAFLOW_STAGING))
-                .concat(PropertyUtils.GCS_BUCKET_FILE_SEPARATOR)
-                .concat("templates"));
+//        options.setTemplateLocation(PropertyUtils.GCS_URL_HEADER
+//                .concat(PropertyUtils.getProperty(PropertyUtils.BUCKET_DATAFLOW_STAGING))
+//                .concat(PropertyUtils.GCS_BUCKET_FILE_SEPARATOR)
+//                .concat("templates"));
 
         Pipeline pipeline = Pipeline.create(options);
 
