@@ -37,8 +37,6 @@ resource "google_dataflow_flex_template_job" "dataflow_flex_job" {
 
   parameters = {
     pipelineName = var.pipeline_name
-    runner       = "DataflowRunner"
-    streaming    = "true"
     # Add more parameters as needed
   }
 
