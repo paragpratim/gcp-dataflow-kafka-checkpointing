@@ -4,13 +4,13 @@ on:
   push:
     branches: [ main ]
     paths: 
-      - 'terraform/modules/dataflow-flex/**'
-      - '.github/workflows/deploy-dataflow-flex.yml'
+      - 'terraform/**'
+      - '.github/workflows/deploy-terraform.yml'
   pull_request:
     branches: [ main ]
     paths:
-      - 'terraform/modules/dataflow-flex/**'
-      - '.github/workflows/deploy-dataflow-flex.yml'
+      - 'terraform/**'
+      - '.github/workflows/deploy-terraform.yml'
   workflow_dispatch:
     inputs:
       action:
@@ -31,9 +31,10 @@ env:
   TF_VAR_region: europe-west4
   TF_VAR_my_domain: ${{ secrets.MY_DOMAIN }}
   TF_VAR_submit_dataflow_flex_job: true
+  TF_TARGET_MODULE: dataflow_job
 
 jobs:
-  terraform:
+  deploy_dataflow_flex_job:
     runs-on: ubuntu-latest
     
     permissions:
@@ -123,7 +124,7 @@ jobs:
         working-directory: terraform
         run: |
           set +e  # Don't exit on error
-          terraform plan -detailed-exitcode -no-color -out=tfplan
+          terraform plan -target="module.${TF_TARGET_MODULE}" -detailed-exitcode -no-color -out=tfplan
           PLAN_EXIT_CODE=$?
           echo "exitcode=$PLAN_EXIT_CODE" >> $GITHUB_OUTPUT
           
@@ -181,14 +182,14 @@ jobs:
           steps.plan.outputs.exitcode == '2'
         working-directory: terraform
         run: |
-          terraform apply -auto-approve tfplan
+          terraform apply -target="module.${TF_TARGET_MODULE}" -auto-approve tfplan
           echo "Infrastructure deployed successfully!"
 
       - name: Terraform Destroy
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'destroy'
         working-directory: terraform
         run: |
-          terraform destroy -auto-approve
+          terraform destroy -target="module.${TF_TARGET_MODULE}" -auto-approve
           echo "Infrastructure destroyed successfully!"
 
       - name: Output Infrastructure Info

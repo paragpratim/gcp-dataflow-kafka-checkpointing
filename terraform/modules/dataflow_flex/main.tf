@@ -24,7 +24,7 @@ resource "google_dataflow_flex_template_job" "dataflow_flex_job" {
   region   = var.region
 
   name                    = lower("${var.pipeline_name}-flex-job")
-  container_spec_gcs_path = google_storage_bucket_object.flex_template_spec.self_link
+  container_spec_gcs_path = "gs://${google_storage_bucket_object.flex_template_spec.bucket}/${google_storage_bucket_object.flex_template_spec.name}"
 
   subnetwork              = var.dataflow_subnetwork
   service_account_email   = var.dataflow_service_account
