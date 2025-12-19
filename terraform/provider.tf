@@ -20,6 +20,5 @@ provider "google" {
 
 provider "google-beta" {
   project = var.project_id
-  # region  = var.region
-  zone = "${var.region}-a"
+  region  = var.region
 }
