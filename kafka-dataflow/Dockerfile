@@ -1,5 +1,5 @@
 # Dockerfile for Dataflow Flex Template with Kafka Dataflow JAR
-FROM gcr.io/dataflow-templates-base/java11-template-launcher-base:latest
+FROM gcr.io/dataflow-templates-base/java17-template-launcher-base:latest
 
 # Copy the Dataflow pipeline JAR into the container
 COPY target/kafka-dataflow-1.0-SNAPSHOT.jar /template/kafka-dataflow.jar
