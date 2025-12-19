@@ -23,13 +23,8 @@ on:
         - apply
         - destroy
 
-# env:
-#   PROJECT_ID: ${{ secrets.DATAFLOW_TEST_PROJECT_ID }}
-#   REGION: europe-west4
-#   TF_VAR_project_id: ${{ secrets.DATAFLOW_TEST_PROJECT_ID }}
-#   TF_VAR_region: europe-west4
-#   TF_VAR_my_domain: ${{ secrets.MY_DOMAIN }}
-#   TF_VAR_submit_dataflow_flex_job: true
+env:
+  GOOGLE_CLOUD_QUOTA_PROJECT: dataflow-test-290e
 
 jobs:
   terraform:
@@ -84,14 +79,12 @@ jobs:
           echo "gcloud auth list:"
           gcloud auth list
 
-      - name: Set gcloud quota-project
-        run: |
-          if [ -n "$GOOGLE_CLOUD_PROJECT" ]; then
-            echo "Setting quota_project to $GOOGLE_CLOUD_PROJECT"
-            gcloud config set quota_project "$GOOGLE_CLOUD_PROJECT"
-          else
-            echo "GOOGLE_CLOUD_PROJECT environment variable is not set. Skipping quota_project set."
-          fi
+      # - name: Set gcloud quota-project
+      #   run: |
+      #     # The gcloud config set quota_project command is not valid and will error:
+      #     # ERROR: (gcloud.config.set) Section [core] has no property [quota_project].
+      #     # The quota_project is determined by ADC or environment variables, not by gcloud config set.
+      #     # If you need to set a quota project, ensure your credentials or environment are configured accordingly.
 
       - name: Show gcloud quota-project
         run: |
