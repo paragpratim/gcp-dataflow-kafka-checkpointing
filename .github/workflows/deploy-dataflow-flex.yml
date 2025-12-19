@@ -27,10 +27,10 @@ env:
   GOOGLE_CLOUD_QUOTA_PROJECT: dataflow-test-290e
 #   PROJECT_ID: ${{ secrets.DATAFLOW_TEST_PROJECT_ID }}
 #   REGION: europe-west4
-#   TF_VAR_project_id: ${{ secrets.DATAFLOW_TEST_PROJECT_ID }}
-#   TF_VAR_region: europe-west4
-#   TF_VAR_my_domain: ${{ secrets.MY_DOMAIN }}
-#   TF_VAR_submit_dataflow_flex_job: true
+  TF_VAR_project_id: ${{ secrets.DATAFLOW_TEST_PROJECT_ID }}
+  TF_VAR_region: europe-west4
+  TF_VAR_my_domain: ${{ secrets.MY_DOMAIN }}
+  TF_VAR_submit_dataflow_flex_job: true
 
 jobs:
   terraform:
@@ -99,108 +99,107 @@ jobs:
             echo "File not found: $GOOGLE_GHA_CREDS_PATH"
           fi
 
-      # - name: Setup Terraform
-      #   uses: hashicorp/setup-terraform@v3
-      #   with:
-      #     terraform_version: 1.6.0
-      #     terraform_wrapper: false
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.0
+          terraform_wrapper: false
 
-      # - name: Terraform Format Check
-      #   working-directory: terraform
-      #   run: terraform fmt -check
+      - name: Terraform Format Check
+        working-directory: terraform
+        run: terraform fmt -check
 
         
-      # - name: Terraform Init
-      #   working-directory: terraform
-      #   run: terraform init
+      - name: Terraform Init
+        working-directory: terraform
+        run: terraform init
 
-      # - name: Terraform Validate
-      #   working-directory: terraform
-      #   run: terraform validate
+      - name: Terraform Validate
+        working-directory: terraform
+        run: terraform validate
 
-      # - name: Terraform Plan
-      #   id: plan
-      #   working-directory: terraform
-      #   run: |
-      #     set +e  # Don't exit on error
-      #     terraform plan -detailed-exitcode -no-color -out=tfplan
-      #     PLAN_EXIT_CODE=$?
-      #     echo "exitcode=$PLAN_EXIT_CODE" >> $GITHUB_OUTPUT
+      - name: Terraform Plan
+        id: plan
+        working-directory: terraform
+        run: |
+          set +e  # Don't exit on error
+          terraform plan -detailed-exitcode -no-color -out=tfplan
+          PLAN_EXIT_CODE=$?
+          echo "exitcode=$PLAN_EXIT_CODE" >> $GITHUB_OUTPUT
           
-      #     # Only fail if exit code is 1 (actual error)
-      #     if [ $PLAN_EXIT_CODE -eq 1 ]; then
-      #       echo "❌ Terraform plan failed"
-      #       exit 1
-      #     fi
+          # Only fail if exit code is 1 (actual error)
+          if [ $PLAN_EXIT_CODE -eq 1 ]; then
+            echo "❌ Terraform plan failed"
+            exit 1
+          fi
           
-      #     # Exit codes 0 (no changes) and 2 (changes detected) are success
-      #     echo "✅ Terraform plan completed with exit code: $PLAN_EXIT_CODE"
+          # Exit codes 0 (no changes) and 2 (changes detected) are success
+          echo "✅ Terraform plan completed with exit code: $PLAN_EXIT_CODE"
 
-      # - name: Comment PR with Plan
-      #   if: github.event_name == 'pull_request'
-      #   uses: actions/github-script@v7
-      #   with:
-      #     script: |
-      #       const plan = `${{ steps.plan.outputs.stdout }}`;
-      #       const exitCode = `${{ steps.plan.outputs.exitcode }}`;
+      - name: Comment PR with Plan
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const plan = `${{ steps.plan.outputs.stdout }}`;
+            const exitCode = `${{ steps.plan.outputs.exitcode }}`;
             
-      #       let status = '';
-      #       if (exitCode === '0') {
-      #         status = '✅ No changes detected';
-      #       } else if (exitCode === '2') {
-      #         status = '📋 Changes detected';
-      #       } else {
-      #         status = '❌ Plan failed';
-      #       }
+            let status = '';
+            if (exitCode === '0') {
+              status = '✅ No changes detected';
+            } else if (exitCode === '2') {
+              status = '📋 Changes detected';
+            } else {
+              status = '❌ Plan failed';
+            }
             
-      #       const output = `## Terraform Plan Results ${status}
+            const output = `## Terraform Plan Results ${status}
             
-      #       <details><summary>Show Plan Output</summary>
+            <details><summary>Show Plan Output</summary>
             
-      #       \`\`\`terraform
-      #       ${plan}
-      #       \`\`\`
+            \`\`\`terraform
+            ${plan}
+            \`\`\`
             
-      #       </details>
+            </details>
             
-      #       *Plan Exit Code: ${exitCode}*
-      #       `;
+            *Plan Exit Code: ${exitCode}*
+            `;
             
-      #       github.rest.issues.createComment({
-      #         issue_number: context.issue.number,
-      #         owner: context.repo.owner,
-      #         repo: context.repo.repo,
-      #         body: output
-      #       });
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            });
 
-      # - name: Terraform Apply
-      #   if: |
-      #     github.ref == 'refs/heads/main' && 
-      #     (github.event_name == 'push' || 
-      #      (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'apply')) &&
-      #     steps.plan.outputs.exitcode == '2'
-      #   working-directory: terraform
-      #   run: |
-      #     terraform apply -auto-approve tfplan
-      #     echo "Infrastructure deployed successfully!"
+      - name: Terraform Apply
+        if: |
+          github.ref == 'refs/heads/main' && 
+          (github.event_name == 'push' || 
+           (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'apply')) &&
+          steps.plan.outputs.exitcode == '2'
+        working-directory: terraform
+        run: |
+          terraform apply -auto-approve tfplan
+          echo "Infrastructure deployed successfully!"
 
-      # - name: Terraform Destroy
-      #   if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'destroy'
-      #   working-directory: terraform
-      #   run: |
-      #     terraform destroy -auto-approve
-      #     echo "Infrastructure destroyed successfully!"
+      - name: Terraform Destroy
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'destroy'
+        working-directory: terraform
+        run: |
+          terraform destroy -auto-approve
+          echo "Infrastructure destroyed successfully!"
 
-      # - name: Output Infrastructure Info
-      #   if: |
-      #     github.ref == 'refs/heads/main' && 
-      #     (github.event_name == 'push' || 
-      #      (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'apply'))
-      #   working-directory: terraform
-      #   run: |
-      #     echo "## Infrastructure Deployment Summary" >> $GITHUB_STEP_SUMMARY
-      #     echo "✅ **Target Project:** ${{ env.PROJECT_ID }}" >> $GITHUB_STEP_SUMMARY
-      #     echo "✅ **Service Account:** $(terraform output -raw service_account_email 2>/dev/null || echo 'N/A')" >> $GITHUB_STEP_SUMMARY
-      #     echo "✅ **Artifact Registry:** $(terraform output -raw artifact_registry_repository 2>/dev/null || echo 'N/A')" >> $GITHUB_STEP_SUMMARY
-      #     echo "📋 **Next Steps:** Deploy application using the deploy-contract-app workflow" >> $GITHUB_STEP_SUMMARY
-
+      - name: Output Infrastructure Info
+        if: |
+          github.ref == 'refs/heads/main' && 
+          (github.event_name == 'push' || 
+           (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'apply'))
+        working-directory: terraform
+        run: |
+          echo "## Infrastructure Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Target Project:** ${{ env.PROJECT_ID }}" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Service Account:** $(terraform output -raw service_account_email 2>/dev/null || echo 'N/A')" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Artifact Registry:** $(terraform output -raw artifact_registry_repository 2>/dev/null || echo 'N/A')" >> $GITHUB_STEP_SUMMARY
+          echo "📋 **Next Steps:** Deploy application using the deploy-contract-app workflow" >> $GITHUB_STEP_SUMMARY
