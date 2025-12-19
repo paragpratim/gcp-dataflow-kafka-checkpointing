@@ -30,7 +30,7 @@ resource "google_dataflow_flex_template_job" "dataflow_flex_job" {
   service_account_email   = var.dataflow_service_account
   staging_location        = var.dataflow_staging_location
   temp_location           = var.dataflow_temp_location
-  num_workers             = 2
+  num_workers             = 1
   max_workers             = 2
   ip_configuration        = "WORKER_IP_PRIVATE"
   enable_streaming_engine = true
