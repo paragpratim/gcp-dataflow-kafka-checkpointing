@@ -1,16 +1,6 @@
 name: Deploy Dataflow Flex Template
 
 on:
-  push:
-    branches: [ main ]
-    paths: 
-      - 'terraform/**'
-      - '.github/workflows/deploy-terraform.yml'
-  pull_request:
-    branches: [ main ]
-    paths:
-      - 'terraform/**'
-      - '.github/workflows/deploy-terraform.yml'
   workflow_dispatch:
     inputs:
       action:
