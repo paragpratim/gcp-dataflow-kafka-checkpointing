@@ -84,11 +84,19 @@ jobs:
           echo "gcloud auth list:"
           gcloud auth list
 
+      - name: Set gcloud quota-project
+        run: |
+          if [ -n "$GOOGLE_CLOUD_PROJECT" ]; then
+            echo "Setting quota_project to $GOOGLE_CLOUD_PROJECT"
+            gcloud config set quota_project "$GOOGLE_CLOUD_PROJECT"
+          else
+            echo "GOOGLE_CLOUD_PROJECT environment variable is not set. Skipping quota_project set."
+          fi
+
       - name: Show gcloud quota-project
         run: |
           echo "gcloud config get-value quota_project:" 
-          gcloud config get-value quota_project || echo "No quota_project set."
-
+          gcloud config get-value quota_project || echo "No quota_project set."          
 
       # - name: Setup Terraform
       #   uses: hashicorp/setup-terraform@v3
