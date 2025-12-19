@@ -23,13 +23,13 @@ on:
         - apply
         - destroy
 
-env:
-  PROJECT_ID: ${{ secrets.DATAFLOW_TEST_PROJECT_ID }}
-  REGION: europe-west4
-  TF_VAR_project_id: ${{ secrets.DATAFLOW_TEST_PROJECT_ID }}
-  TF_VAR_region: europe-west4
-  TF_VAR_my_domain: ${{ secrets.MY_DOMAIN }}
-  TF_VAR_submit_dataflow_flex_job: true
+# env:
+#   PROJECT_ID: ${{ secrets.DATAFLOW_TEST_PROJECT_ID }}
+#   REGION: europe-west4
+#   TF_VAR_project_id: ${{ secrets.DATAFLOW_TEST_PROJECT_ID }}
+#   TF_VAR_region: europe-west4
+#   TF_VAR_my_domain: ${{ secrets.MY_DOMAIN }}
+#   TF_VAR_submit_dataflow_flex_job: true
 
 jobs:
   terraform:
@@ -62,8 +62,8 @@ jobs:
       #     project_id: ${{ env.PROJECT_ID }}  # Set target project directly in auth
       #     create_credentials_file: true
 
-      # - name: Set up Cloud SDK
-      #   uses: google-github-actions/setup-gcloud@v2
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
 
       # - name: Setup Terraform
       #   uses: hashicorp/setup-terraform@v3
