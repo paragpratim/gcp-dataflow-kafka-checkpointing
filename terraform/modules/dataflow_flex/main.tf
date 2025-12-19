@@ -37,7 +37,7 @@ resource "google_dataflow_flex_template_job" "dataflow_flex_job" {
 
   parameters = {
     pipelineName = var.pipeline_name
-    workerzone  = "${var.region}-a"
+    workerZone  = "${var.region}-a"
     # Add more parameters as needed
   }
 
