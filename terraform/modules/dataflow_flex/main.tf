@@ -23,7 +23,7 @@ resource "google_dataflow_flex_template_job" "dataflow_flex_job" {
   project  = var.project_id
   region   = var.region
 
-  name                    = lower("${var.pipeline_name}-flex-job")
+  name                    = lower("${var.pipeline_name}-${formatdate("YYYYMMDD-hhmmss", timestamp())}")
   container_spec_gcs_path = "gs://${google_storage_bucket_object.flex_template_spec.bucket}/${google_storage_bucket_object.flex_template_spec.name}"
 
   subnetwork              = var.dataflow_subnetwork
@@ -37,7 +37,6 @@ resource "google_dataflow_flex_template_job" "dataflow_flex_job" {
 
   parameters = {
     pipelineName = var.pipeline_name
-    jobName      = lower("${var.pipeline_name}-${formatdate("YYYYMMDD-hhmmss", timestamp())}")
     runner       = "DataflowRunner"
     streaming    = "true"
     # Add more parameters as needed
