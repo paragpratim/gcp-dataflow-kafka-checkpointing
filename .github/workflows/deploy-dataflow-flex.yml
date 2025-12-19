@@ -77,6 +77,13 @@ jobs:
             echo "File not found: $GOOGLE_APPLICATION_CREDENTIALS"
           fi
 
+      - name: Show Application Default Credentials (ADC)
+        run: |
+          echo "gcloud auth application-default print-access-token:"
+          gcloud auth application-default print-access-token || echo "Failed to get ADC access token."
+          echo "gcloud auth list:"
+          gcloud auth list
+
 
       # - name: Setup Terraform
       #   uses: hashicorp/setup-terraform@v3
