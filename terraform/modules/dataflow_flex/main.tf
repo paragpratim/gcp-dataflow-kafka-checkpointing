@@ -37,7 +37,7 @@ resource "google_dataflow_flex_template_job" "dataflow_flex_job" {
 
   parameters = {
     pipelineName = var.pipeline_name
-    jobName      = "${var.pipeline_name}-${replace(replace(formatdate("yyyyMMdd-HHmmss", timestamp()), ":", ""), "_", "")}"
+    jobName      = lower("${var.pipeline_name}-${formatdate("YYYYMMDD-hhmmss", timestamp())}")
     runner       = "DataflowRunner"
     streaming    = "true"
     # Add more parameters as needed
