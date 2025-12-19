@@ -84,6 +84,11 @@ jobs:
           echo "gcloud auth list:"
           gcloud auth list
 
+      - name: Show gcloud quota-project
+        run: |
+          echo "gcloud config get-value quota_project:" 
+          gcloud config get-value quota_project || echo "No quota_project set."
+
 
       # - name: Setup Terraform
       #   uses: hashicorp/setup-terraform@v3
