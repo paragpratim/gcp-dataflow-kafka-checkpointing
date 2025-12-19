@@ -66,6 +66,39 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v3
 
+      - name: Show CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE file content
+        run: |
+          echo "CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE: $CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE"
+          if [ -f "$CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE" ]; then
+            echo "--- File Content Start ---"
+            cat "$CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE"
+            echo "--- File Content End ---"
+          else
+            echo "File not found: $CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE"
+          fi
+
+      - name: Show GOOGLE_APPLICATION_CREDENTIALS file content
+        run: |
+          echo "GOOGLE_APPLICATION_CREDENTIALS: $GOOGLE_APPLICATION_CREDENTIALS"
+          if [ -f "$GOOGLE_APPLICATION_CREDENTIALS" ]; then
+            echo "--- File Content Start ---"
+            cat "$GOOGLE_APPLICATION_CREDENTIALS"
+            echo "--- File Content End ---"
+          else
+            echo "File not found: $GOOGLE_APPLICATION_CREDENTIALS"
+          fi
+
+      - name: Show GOOGLE_GHA_CREDS_PATH file content
+        run: |
+          echo "GOOGLE_GHA_CREDS_PATH: $GOOGLE_GHA_CREDS_PATH"
+          if [ -f "$GOOGLE_GHA_CREDS_PATH" ]; then
+            echo "--- File Content Start ---"
+            cat "$GOOGLE_GHA_CREDS_PATH"
+            echo "--- File Content End ---"
+          else
+            echo "File not found: $GOOGLE_GHA_CREDS_PATH"
+          fi
+
       # - name: Setup Terraform
       #   uses: hashicorp/setup-terraform@v3
       #   with:
