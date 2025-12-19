@@ -8,6 +8,7 @@ resource "google_service_account" "dataflow_service_account" {
 # Enable required APIs
 resource "google_project_service" "required_apis" {
   for_each = toset([
+    "iam.googleapis.com",
     "bigquery.googleapis.com",
     "logging.googleapis.com",
     "storage.googleapis.com",
