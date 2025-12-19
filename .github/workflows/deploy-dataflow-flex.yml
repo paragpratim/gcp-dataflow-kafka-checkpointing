@@ -65,6 +65,19 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
+
+      - name: Show GOOGLE_APPLICATION_CREDENTIALS file content
+        run: |
+          echo "GOOGLE_APPLICATION_CREDENTIALS: $GOOGLE_APPLICATION_CREDENTIALS"
+          if [ -f "$GOOGLE_APPLICATION_CREDENTIALS" ]; then
+            echo "--- File Content Start ---"
+            cat "$GOOGLE_APPLICATION_CREDENTIALS"
+            echo "--- File Content End ---"
+          else
+            echo "File not found: $GOOGLE_APPLICATION_CREDENTIALS"
+          fi
+
+
       # - name: Setup Terraform
       #   uses: hashicorp/setup-terraform@v3
       #   with:
