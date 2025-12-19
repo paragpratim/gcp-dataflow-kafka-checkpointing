@@ -23,7 +23,7 @@ resource "google_dataflow_flex_template_job" "dataflow_flex_job" {
   project  = var.project_id
   region   = var.region
 
-  name                    = "${var.pipeline_name}-flex-job"
+  name                    = lower("${var.pipeline_name}-flex-job")
   container_spec_gcs_path = google_storage_bucket_object.flex_template_spec.self_link
 
   subnetwork              = var.dataflow_subnetwork
