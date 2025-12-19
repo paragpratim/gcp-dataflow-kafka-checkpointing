@@ -35,7 +35,7 @@ resource "google_dataflow_flex_template_job" "dataflow_flex_job" {
   ip_configuration        = "WORKER_IP_PRIVATE"
   enable_streaming_engine = true
 
-  additional_pipeline_options = ["workerZone = \"${var.region}-a\""]
+  additional_pipeline_options = ["workerZone =${var.region}-a"]
 
   parameters = {
     pipelineName = var.pipeline_name
