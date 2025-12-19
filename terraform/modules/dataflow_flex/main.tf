@@ -21,7 +21,7 @@ resource "google_storage_bucket_object" "flex_template_spec" {
 resource "google_dataflow_flex_template_job" "dataflow_flex_job" {
   provider = google-beta
   project  = var.project_id
-  region   = var.region
+  # region   = var.region
 
   name                    = lower("${var.pipeline_name}-${formatdate("YYYYMMDD-hhmmss", timestamp())}")
   container_spec_gcs_path = "gs://${google_storage_bucket_object.flex_template_spec.bucket}/${google_storage_bucket_object.flex_template_spec.name}"
