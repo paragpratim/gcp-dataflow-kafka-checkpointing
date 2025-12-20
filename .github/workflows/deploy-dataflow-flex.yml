@@ -53,7 +53,7 @@ jobs:
           service_account: svc-deployment@deployment-472509.iam.gserviceaccount.com
           audience: https://github.com/paragpratim/gcp-dataflow-kafka-checkpointing
           project_id: dataflow-test-290e  # Set target project directly in auth
-          create_credentials_file: true
+          # create_credentials_file: true
 
       # - name: Authenticate to Google Cloud
       #   uses: google-github-actions/auth@v2
