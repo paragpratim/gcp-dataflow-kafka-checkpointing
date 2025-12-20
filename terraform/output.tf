@@ -70,9 +70,9 @@ output "flex_template_spec_gcs_path" {
   value       = module.dataflow_flex_streaming[0].flex_template_spec_gcs_path
 }
 
-output "dataflow_job_name" {
-  description = "Name of the Dataflow Flex Template job."
-  value       = module.dataflow_flex_streaming[0].dataflow_job_name
+output "artifact_registry_repository_name" {
+  description = "The name of the created Artifact Registry repository."
+  value       = module.dataflow.artifact_registry_repository_name
 }
 
 output "dataflow_job_id" {
