@@ -59,20 +59,15 @@ output "nat_name" {
   value       = module.dataflow.nat_name
 }
 
-output "artifact_registry_repository_url" {
-  description = "The URL of the created Artifact Registry repository."
-  value       = module.dataflow.artifact_registry_repository_url
+output "artifact_registry_repository_name" {
+  description = "The name of the created Artifact Registry repository."
+  value       = module.dataflow.artifact_registry_repository_name
 }
 
 # Output from dataflow_flex_streaming module
 output "flex_template_spec_gcs_path" {
   description = "GCS path to the Flex Template spec JSON."
   value       = module.dataflow_flex_streaming[0].flex_template_spec_gcs_path
-}
-
-output "artifact_registry_repository_name" {
-  description = "The name of the created Artifact Registry repository."
-  value       = module.dataflow.artifact_registry_repository_name
 }
 
 output "dataflow_job_id" {
