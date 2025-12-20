@@ -12,7 +12,7 @@ module "dataflow" {
   artifact_registry_format        = var.artifact_registry_format
 }
 
-module "dataflow_job" {
+module "dataflow_flex_streaming" {
   source = "./modules/dataflow_flex_streaming"
 
   count = var.submit_dataflow_flex_job ? 1 : 0
