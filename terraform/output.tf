@@ -59,9 +59,9 @@ output "nat_name" {
   value       = module.dataflow.nat_name
 }
 
-output "artifact_registry_repository_id" {
-  description = "The resource name of the created Artifact Registry repository."
-  value       = module.dataflow.artifact_registry_repository_id
+output "artifact_registry_repository_url" {
+  description = "The URL of the created Artifact Registry repository."
+  value       = module.dataflow.artifact_registry_repository_url
 }
 
 # Output from dataflow_flex_streaming module
