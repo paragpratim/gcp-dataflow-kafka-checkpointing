@@ -19,7 +19,7 @@ module "dataflow_job" {
 
   project_id                = var.project_id
   region                    = var.region
-  flex_template_image       = "${var.region}-docker.pkg.dev/${var.project_id}/${module.dataflow.artifact_registry_repository_id}/kafka-dataflow:latest"
+  flex_template_image       = "${var.region}-docker.pkg.dev/${var.project_id}/${var.artifact_registry_repository_id}/kafka-dataflow:latest"
   flex_template_bucket      = module.dataflow.dataflow_staging_bucket
   pipeline_name             = "KafkaToBqPipeline"
   dataflow_temp_location    = "gs://${module.dataflow.dataflow_staging_bucket}/temp"
