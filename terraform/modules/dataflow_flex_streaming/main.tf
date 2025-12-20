@@ -5,11 +5,11 @@ resource "local_file" "flex_template_spec" {
     sdk_info = { language = "JAVA" }
     # Add other options if needed
   })
-  filename = "${path.module}/kafka-to-bq-spec.json"
+  filename = "${path.module}/dataflow-flex-template-spec.json"
 }
 
 resource "google_storage_bucket_object" "flex_template_spec" {
-  name         = "templates/kafka-to-bq-spec.json"
+  name         = "templates/dataflow-flex-template-spec.json"
   bucket       = var.flex_template_bucket
   content      = local_file.flex_template_spec.content
   content_type = "application/json"
@@ -35,12 +35,10 @@ resource "google_dataflow_flex_template_job" "dataflow_flex_job" {
   ip_configuration        = "WORKER_IP_PRIVATE"
   enable_streaming_engine = true
 
-  additional_pipeline_options = ["workerZone=${var.region}-a"]
+  additional_pipeline_options = []
 
   parameters = {
     pipelineName = var.pipeline_name
-    workerZone   = "${var.region}-a"
-    # Add more parameters as needed
   }
 
   on_delete                    = var.update_mode

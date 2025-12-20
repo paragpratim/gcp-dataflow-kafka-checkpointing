@@ -1,16 +1,6 @@
 name: Deploy Dataflow Flex Template
 
 on:
-  push:
-    branches: [ main ]
-    paths: 
-      - 'terraform/**'
-      - '.github/workflows/deploy-terraform.yml'
-  pull_request:
-    branches: [ main ]
-    paths:
-      - 'terraform/**'
-      - '.github/workflows/deploy-terraform.yml'
   workflow_dispatch:
     inputs:
       action:
@@ -158,6 +148,7 @@ jobs:
         run: |
           echo "## Infrastructure Deployment Summary" >> $GITHUB_STEP_SUMMARY
           echo "✅ **Target Project:** ${{ env.PROJECT_ID }}" >> $GITHUB_STEP_SUMMARY
-          echo "✅ **Service Account:** $(terraform output -raw service_account_email 2>/dev/null || echo 'N/A')" >> $GITHUB_STEP_SUMMARY
-          echo "✅ **Artifact Registry:** $(terraform output -raw artifact_registry_repository 2>/dev/null || echo 'N/A')" >> $GITHUB_STEP_SUMMARY
-          echo "📋 **Next Steps:** Deploy application using the deploy-contract-app workflow" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Flex Template Spec GCS Path:** $(terraform output -raw flex_template_spec_gcs_path 2>/dev/null || echo 'N/A')" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Dataflow Job Name:** $(terraform output -raw dataflow_job_name 2>/dev/null || echo 'N/A')" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Dataflow Job ID:** $(terraform output -raw dataflow_job_id 2>/dev/null || echo 'N/A')" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Dataflow Job State:** $(terraform output -raw dataflow_job_state 2>/dev/null || echo 'N/A')" >> $GITHUB_STEP_SUMMARY

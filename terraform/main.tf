@@ -13,7 +13,7 @@ module "dataflow" {
 }
 
 module "dataflow_job" {
-  source = "./modules/dataflow_flex"
+  source = "./modules/dataflow_flex_streaming"
 
   count = var.submit_dataflow_flex_job ? 1 : 0
 
