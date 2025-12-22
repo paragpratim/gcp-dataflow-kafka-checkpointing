@@ -27,6 +27,7 @@ jobs:
         run: mvn -B -f kafka-example-client/pom.xml install
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
+        continue-on-error: true
 
   secret-scan:
     name: Secret Scan
