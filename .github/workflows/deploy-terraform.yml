@@ -26,10 +26,6 @@ on:
 env:
   PROJECT_ID: ${{ secrets.DATAFLOW_TEST_PROJECT_ID }}
   REGION: europe-west4
-  TF_VAR_project_id: ${{ secrets.DATAFLOW_TEST_PROJECT_ID }}
-  TF_VAR_region: europe-west4
-  TF_VAR_my_domain: ${{ secrets.MY_DOMAIN }}
-  TF_TARGET_MODULE: dataflow
 
 jobs:
   init:
@@ -56,15 +52,15 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
-      - name: Run Terraform Composite Action
-        uses: paragpratim/github-actions-pipeline-templates/.github/actions/terraform@main
-        with:
-          action: ${{ github.event.inputs.action }}
-          terraform_version: 1.6.0
-          tf_target_module: ${{ env.TF_TARGET_MODULE }}
   terraform:
+    needs: init
     uses: paragpratim/github-actions-pipeline-templates/.github/workflows/deploy-terraform-job.yml@main
     with:
       action: ${{ github.event.inputs.action }}
       terraform_version: 1.6.0
-      tf_target_module: ${{ env.TF_TARGET_MODULE }}
+      tf_target_module: dataflow
+      tf_env_vars: |
+        TF_VAR_project_id=${{ secrets.DATAFLOW_TEST_PROJECT_ID }}
+        TF_VAR_region=europe-west4
+        TF_VAR_my_domain=${{ secrets.MY_DOMAIN }}
+        TF_TARGET_MODULE=dataflow
