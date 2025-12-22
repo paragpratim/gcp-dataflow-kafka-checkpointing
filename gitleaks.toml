@@ -1,39 +1,34 @@
 [[rules]]
-id = "project-id"
-name = "Project ID"
-description = "Detects GCP project IDs in config files"
-regex = '''project\.name\s*=\s*[a-zA-Z0-9\-]+'''
+id = "project-name-plain-value"
+description = "Detects project.name with plain value (not secret reference)"
+regex = '''project\.name\s*=\s*(?!\$\{)[^\s#]+'''
 secretGroup = 0
 keywords = ["project.name"]
 
 [[rules]]
-id = "gcs-bucket-staging"
-name = "GCS Bucket Staging"
-description = "Detects GCS bucket staging config"
-regex = '''bucket\.dataflow\.staging\s*=\s*\$\{BUCKET_DATAFLOW_STAGING\}|bucket\.dataflow\.staging\s*=\s*[a-zA-Z0-9\-_\.]+'''
+id = "gcs-bucket-staging-plain-value"
+description = "Detects bucket.dataflow.staging with plain value (not secret reference)"
+regex = '''bucket\.dataflow\.staging\s*=\s*(?!\$\{)[^\s#]+'''
 secretGroup = 0
 keywords = ["bucket.dataflow.staging"]
 
 [[rules]]
-id = "kafka-broker-host"
-name = "Kafka Broker Host"
-description = "Detects Kafka broker host config"
-regex = '''kafka\.broker\.host\s*=\s*\$\{KAFKA_BROKER_HOST\}|kafka\.broker\.host\s*=\s*[a-zA-Z0-9\-_\.]+'''
+id = "kafka-broker-host-plain-value"
+description = "Detects kafka.broker.host with plain value (not secret reference)"
+regex = '''kafka\.broker\.host\s*=\s*(?!\$\{)[^\s#]+'''
 secretGroup = 0
 keywords = ["kafka.broker.host"]
 
 [[rules]]
-id = "kafka-sasl-username"
-name = "Kafka SASL Username"
-description = "Detects Kafka SASL username config"
-regex = '''kafka\.sasl\.username\s*=\s*\$\{KAFKA_SASL_USERNAME\}|kafka\.sasl\.username\s*=\s*[a-zA-Z0-9\-_]+'''
+id = "kafka-sasl-username-plain-value"
+description = "Detects kafka.sasl.username with plain value (not secret reference)"
+regex = '''kafka\.sasl\.username\s*=\s*(?!\$\{)[^\s#]+'''
 secretGroup = 0
 keywords = ["kafka.sasl.username"]
 
 [[rules]]
-id = "kafka-sasl-password"
-name = "Kafka SASL Password"
-description = "Detects Kafka SASL password config"
-regex = '''kafka\.sasl\.password\s*=\s*\$\{KAFKA_SASL_PASSWORD\}|kafka\.sasl\.password\s*=\s*.+'''
+id = "kafka-sasl-password-plain-value"
+description = "Detects kafka.sasl.password with plain value (not secret reference)"
+regex = '''kafka\.sasl\.password\s*=\s*(?!\$\{)[^\s#]+'''
 secretGroup = 0
 keywords = ["kafka.sasl.password"]
