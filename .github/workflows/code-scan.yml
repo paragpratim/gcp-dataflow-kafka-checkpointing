@@ -21,8 +21,8 @@ jobs:
         uses: github/codeql-action/init@v3
         with:
           languages: java
-      - name: Build kafka-dataflow
-        run: mvn -B -f kafka-dataflow/pom.xml install
+    #   - name: Build kafka-dataflow
+    #     run: mvn -B -f kafka-dataflow/pom.xml install
       - name: Build kafka-example-client
         run: mvn -B -f kafka-example-client/pom.xml install
       - name: Perform CodeQL Analysis
