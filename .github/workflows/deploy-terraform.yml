@@ -32,7 +32,7 @@ env:
   TF_TARGET_MODULE: dataflow
 
 jobs:
-  terraform:
+  init:
     runs-on: ubuntu-latest
     
     permissions:
@@ -62,3 +62,9 @@ jobs:
           action: ${{ github.event.inputs.action }}
           terraform_version: 1.6.0
           tf_target_module: ${{ env.TF_TARGET_MODULE }}
+  terraform:
+    uses: paragpratim/github-actions-pipeline-templates/.github/workflows/deploy-terraform-job.yml@main
+    with:
+      action: ${{ github.event.inputs.action }}
+      terraform_version: 1.6.0
+      tf_target_module: ${{ env.TF_TARGET_MODULE }}
