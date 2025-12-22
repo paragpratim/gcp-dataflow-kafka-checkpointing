@@ -16,4 +16,4 @@ jobs:
       - name: Run Gitleaks to scan for secrets
         uses: gitleaks/gitleaks-action@v2
         with:
-          args: "detect --source=. --log-opts=--all --exit-code 1"
+          args: "detect --source=. --log-opts=--all --config=gitleaks.toml --exit-code 1"

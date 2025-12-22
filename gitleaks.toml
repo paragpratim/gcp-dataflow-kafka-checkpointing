@@ -1,0 +1,39 @@
+[[rules]]
+id = "project-id"
+name = "Project ID"
+description = "Detects GCP project IDs in config files"
+regex = '''project\.name\s*=\s*[a-zA-Z0-9\-]+'''
+secretGroup = 0
+keywords = ["project.name"]
+
+[[rules]]
+id = "gcs-bucket-staging"
+name = "GCS Bucket Staging"
+description = "Detects GCS bucket staging config"
+regex = '''bucket\.dataflow\.staging\s*=\s*\$\{BUCKET_DATAFLOW_STAGING\}|bucket\.dataflow\.staging\s*=\s*[a-zA-Z0-9\-_\.]+'''
+secretGroup = 0
+keywords = ["bucket.dataflow.staging"]
+
+[[rules]]
+id = "kafka-broker-host"
+name = "Kafka Broker Host"
+description = "Detects Kafka broker host config"
+regex = '''kafka\.broker\.host\s*=\s*\$\{KAFKA_BROKER_HOST\}|kafka\.broker\.host\s*=\s*[a-zA-Z0-9\-_\.]+'''
+secretGroup = 0
+keywords = ["kafka.broker.host"]
+
+[[rules]]
+id = "kafka-sasl-username"
+name = "Kafka SASL Username"
+description = "Detects Kafka SASL username config"
+regex = '''kafka\.sasl\.username\s*=\s*\$\{KAFKA_SASL_USERNAME\}|kafka\.sasl\.username\s*=\s*[a-zA-Z0-9\-_]+'''
+secretGroup = 0
+keywords = ["kafka.sasl.username"]
+
+[[rules]]
+id = "kafka-sasl-password"
+name = "Kafka SASL Password"
+description = "Detects Kafka SASL password config"
+regex = '''kafka\.sasl\.password\s*=\s*\$\{KAFKA_SASL_PASSWORD\}|kafka\.sasl\.password\s*=\s*.+'''
+secretGroup = 0
+keywords = ["kafka.sasl.password"]
