@@ -1,34 +1,49 @@
 [[rules]]
 id = "project-name-plain-value"
 description = "Detects project.name with plain value (not secret reference)"
-regex = '''project\.name\s*=\s*(?!\$\{)[^\s#]+'''
-secretGroup = 0
+regex = '''project\.name\s*=\s*([^\s#]+)'''
+secretGroup = 1
 keywords = ["project.name"]
+	[[rules.allowlists]]
+	description = "Allow secret references"
+	regexes = ['''^\$\{.*\}$''']
 
 [[rules]]
 id = "gcs-bucket-staging-plain-value"
 description = "Detects bucket.dataflow.staging with plain value (not secret reference)"
-regex = '''bucket\.dataflow\.staging\s*=\s*(?!\$\{)[^\s#]+'''
-secretGroup = 0
+regex = '''bucket\.dataflow\.staging\s*=\s*([^\s#]+)'''
+secretGroup = 1
 keywords = ["bucket.dataflow.staging"]
+	[[rules.allowlists]]
+	description = "Allow secret references"
+	regexes = ['''^\$\{.*\}$''']
 
 [[rules]]
 id = "kafka-broker-host-plain-value"
 description = "Detects kafka.broker.host with plain value (not secret reference)"
-regex = '''kafka\.broker\.host\s*=\s*(?!\$\{)[^\s#]+'''
-secretGroup = 0
+regex = '''kafka\.broker\.host\s*=\s*([^\s#]+)'''
+secretGroup = 1
 keywords = ["kafka.broker.host"]
+	[[rules.allowlists]]
+	description = "Allow secret references"
+	regexes = ['''^\$\{.*\}$''']
 
 [[rules]]
 id = "kafka-sasl-username-plain-value"
 description = "Detects kafka.sasl.username with plain value (not secret reference)"
-regex = '''kafka\.sasl\.username\s*=\s*(?!\$\{)[^\s#]+'''
-secretGroup = 0
+regex = '''kafka\.sasl\.username\s*=\s*([^\s#]+)'''
+secretGroup = 1
 keywords = ["kafka.sasl.username"]
+	[[rules.allowlists]]
+	description = "Allow secret references"
+	regexes = ['''^\$\{.*\}$''']
 
 [[rules]]
 id = "kafka-sasl-password-plain-value"
 description = "Detects kafka.sasl.password with plain value (not secret reference)"
-regex = '''kafka\.sasl\.password\s*=\s*(?!\$\{)[^\s#]+'''
-secretGroup = 0
+regex = '''kafka\.sasl\.password\s*=\s*([^\s#]+)'''
+secretGroup = 1
 keywords = ["kafka.sasl.password"]
+	[[rules.allowlists]]
+	description = "Allow secret references"
+	regexes = ['''^\$\{.*\}$''']
