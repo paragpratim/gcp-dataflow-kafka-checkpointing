@@ -21,8 +21,10 @@ jobs:
         uses: github/codeql-action/init@v3
         with:
           languages: java
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@v3
+      - name: Build kafka-dataflow
+        run: mvn -B -f kafka-dataflow/pom.xml install
+      - name: Build kafka-example-client
+        run: mvn -B -f kafka-example-client/pom.xml install
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
 
@@ -35,4 +37,4 @@ jobs:
       - name: Run Gitleaks to scan for secrets
         uses: gitleaks/gitleaks-action@v2
         with:
-          args: "detect --source=. --exit-code 1"
+          args: "detect --source=. --log-opts=--all --exit-code 1"
