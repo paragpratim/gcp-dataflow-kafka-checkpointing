@@ -23,14 +23,11 @@ on:
         - apply
         - destroy
 
-env:
-  PROJECT_ID: ${{ secrets.DATAFLOW_TEST_PROJECT_ID }}
-  REGION: europe-west4
-
 jobs:
   init:
     runs-on: ubuntu-latest
-    
+    env:
+      PROJECT_ID: ${{ secrets.DATAFLOW_TEST_PROJECT_ID }}
     permissions:
       contents: read
       id-token: write
@@ -54,6 +51,7 @@ jobs:
 
   terraform:
     needs: init
+    secrets: inherit
     uses: paragpratim/github-actions-pipeline-templates/.github/workflows/deploy-terraform-job.yml@main
     with:
       action: ${{ github.event.inputs.action }}
