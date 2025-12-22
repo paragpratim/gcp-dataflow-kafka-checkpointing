@@ -32,8 +32,7 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      - name: GitHub Secret Scanning
-        uses: github/secret-scanning-action@v1
+      - name: Run Gitleaks to scan for secrets
+        uses: gitleaks/gitleaks-action@v2
         with:
-          scan_type: push
-          fail_on_secrets: true
+          args: "detect --source=. --exit-code 1"
