@@ -4,6 +4,7 @@ import com.google.api.services.bigquery.model.TableRow;
 import com.google.api.services.bigquery.model.TableSchema;
 import com.google.api.services.bigquery.model.TimePartitioning;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO;
+import org.apache.beam.sdk.io.gcp.bigquery.WriteResult;
 import org.apache.beam.sdk.values.PCollection;
 import org.fusadora.dataflow.services.OutputService;
 import org.joda.time.Duration;
@@ -17,13 +18,15 @@ import org.joda.time.Duration;
  */
 public class OutputServiceImpl implements OutputService {
     @Override
-    public void writeToBqFileLoad(PCollection<TableRow> input, String transformName, String bqTableName, TableSchema bqTableSchema, String partitionType, BigQueryIO.Write.WriteDisposition writeDisposition) {
-        input.apply(transformName,
+    public WriteResult writeToBqFileLoad(PCollection<TableRow> input, String transformName, String bqTableName,
+                                         TableSchema bqTableSchema, String partitionType) {
+        return input.apply(transformName,
                 BigQueryIO.writeTableRows().to(bqTableName).withSchema(bqTableSchema)
-                        .withWriteDisposition(writeDisposition)
                         .withCreateDisposition(BigQueryIO.Write.CreateDisposition.CREATE_IF_NEEDED)
                         .withWriteDisposition(BigQueryIO.Write.WriteDisposition.WRITE_APPEND)
                         .withMethod(BigQueryIO.Write.Method.STORAGE_WRITE_API)
+                        .withPropagateSuccessfulStorageApiWrites(true)
+                        .ignoreUnknownValues()
                         .withTriggeringFrequency(Duration.standardMinutes(1))
                         .withTimePartitioning(new TimePartitioning().setType(partitionType)));
     }

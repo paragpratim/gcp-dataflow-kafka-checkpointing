@@ -33,6 +33,12 @@ public class PropertyUtils {
     public static final String KAFKA_SASL_USERNAME = "kafka.sasl.username";
     public static final String KAFKA_SASL_PASSWORD = "kafka.sasl.password";
 
+    // checkpoint
+    public static final String CHECKPOINT_COLLECTION = "checkpoint.collection";
+    public static final String CHECKPOINT_BOOTSTRAP_ENABLED = "checkpoint.bootstrap.enabled";
+    public static final String OFFSET_GAP_TIMEOUT_SECONDS = "offset.gap.timeout.seconds";
+    public static final String OFFSET_GAP_AUDIT_ENABLED = "offset.gap.audit.enabled";
+
 
     private static final Logger LOG = LoggerFactory.getLogger(PropertyUtils.class);
     protected static PropertyUtils instance = null;

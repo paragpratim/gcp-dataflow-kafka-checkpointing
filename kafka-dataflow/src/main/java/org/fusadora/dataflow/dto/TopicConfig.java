@@ -6,6 +6,7 @@ import com.google.common.base.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Serial;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
@@ -26,6 +27,9 @@ import static org.fusadora.dataflow.dto.TopicConfigs.CONFIG_FILE_NAME;
         "datasetName"
 })
 public class TopicConfig extends BaseDto {
+
+    @Serial
+    private static final long serialVersionUID = 1L;
 
     public static final Logger LOG = LoggerFactory.getLogger(TopicConfig.class);
     @JsonIgnore

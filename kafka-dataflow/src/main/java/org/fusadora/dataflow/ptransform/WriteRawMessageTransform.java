@@ -1,23 +1,16 @@
 package org.fusadora.dataflow.ptransform;
 
 import com.google.api.services.bigquery.model.TableRow;
-import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO;
-import org.apache.beam.sdk.transforms.DoFn;
+import org.apache.beam.sdk.io.gcp.bigquery.WriteResult;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.values.PCollection;
-import org.apache.beam.sdk.values.PDone;
+import org.fusadora.dataflow.dofn.KafkaEnvelopeToTableRowDoFn;
+import org.fusadora.dataflow.dto.KafkaEventEnvelope;
 import org.fusadora.dataflow.dto.TopicConfig;
 import org.fusadora.dataflow.services.OutputService;
 import org.fusadora.dataflow.utilities.BQSchema;
 import org.jetbrains.annotations.NotNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.Date;
-import java.util.Objects;
-
-import static org.fusadora.common.BigquerySchemaConstants.*;
 
 /**
  * org.fusadora.dataflow.ptransform.WriteRawMessageTransform
@@ -26,10 +19,13 @@ import static org.fusadora.common.BigquerySchemaConstants.*;
  * @author Parag Ghosh
  * @since 04/12/2025
  */
-public class WriteRawMessageTransform extends PTransform<@NotNull PCollection<String>, @NotNull PDone> {
+public class WriteRawMessageTransform extends PTransform<@NotNull PCollection<KafkaEventEnvelope>, @NotNull WriteResult> {
     public static final String BQ_TABLE_RAW_MESSAGE = "KAFKA_RAW_MESSAGE";
     public static final String BQ_SCHEMA_RAW_MESSAGE = "schema/raw_message_schema.txt";
-    private static final Logger LOG = LoggerFactory.getLogger(WriteRawMessageTransform.class);
+    public static final String META_KAFKA_TOPIC = "_meta_kafka_topic";
+    public static final String META_KAFKA_PARTITION = "_meta_kafka_partition";
+    public static final String META_KAFKA_OFFSET = "_meta_kafka_offset";
+
     private final OutputService outputService;
     private final TopicConfig topicConfig;
 
@@ -39,26 +35,14 @@ public class WriteRawMessageTransform extends PTransform<@NotNull PCollection<St
     }
 
     @Override
-    public @NotNull PDone expand(PCollection<String> input) {
+    public @NotNull WriteResult expand(PCollection<KafkaEventEnvelope> input) {
         BQSchema rawMessageSchema = BQSchema.fromFile(BQ_SCHEMA_RAW_MESSAGE);
 
-        PCollection<TableRow> rawMessageRow = input.apply("Get Raw Message TableRow", ParDo.of(new DoFn<String, TableRow>() {
-            @ProcessElement
-            public void processElement(ProcessContext processContext) {
-                if (!Objects.requireNonNull(processContext.element()).contains("errorMessage")) {
-                    TableRow tr = new TableRow();
-                    tr.put(SCHEMA_RAW_MESSAGE, processContext.element());
-                    tr.put(SCHEMA_KAFKA_TOPIC, topicConfig.getTopicName());
-                    tr.put(SCHEMA_VERSION, new Date().getTime());
-                    processContext.output(tr);
-                }
-            }
-        }));
+        PCollection<TableRow> rawMessageRow = input.apply("Get Raw Message TableRow",
+                ParDo.of(new KafkaEnvelopeToTableRowDoFn(topicConfig)));
 
-        outputService.writeToBqFileLoad(rawMessageRow, "Write Raw Message To Bq", topicConfig.getDatasetName()
+        return outputService.writeToBqFileLoad(rawMessageRow, "Write Raw Message To Bq", topicConfig.getDatasetName()
                         .concat(".").concat(BQ_TABLE_RAW_MESSAGE),
-                rawMessageSchema.getTableSchema(), "DAY", BigQueryIO.Write.WriteDisposition.WRITE_APPEND);
-
-        return PDone.in(input.getPipeline());
+                rawMessageSchema.getTableSchema(), "DAY");
     }
 }

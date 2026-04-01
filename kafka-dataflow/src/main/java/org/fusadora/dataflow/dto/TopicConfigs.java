@@ -7,6 +7,7 @@ import org.fusadora.dataflow.utilities.PropertyUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Serial;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
@@ -23,6 +24,10 @@ import java.util.*;
         "topicConfigs"
 })
 public class TopicConfigs extends BaseDto {
+
+    @Serial
+    private static final long serialVersionUID = 1L;
+
     public static final Logger LOG = LoggerFactory.getLogger(TopicConfigs.class);
     public static final String CONFIG_FILE_NAME = "topic-config.json";
     @JsonIgnore

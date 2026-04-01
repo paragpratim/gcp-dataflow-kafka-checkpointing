@@ -10,6 +10,7 @@ import org.fusadora.dataflow.dto.BaseDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Serial;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -22,10 +23,18 @@ import java.util.Map;
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class TableData extends BaseDto {
+
+    @Serial
+    private static final long serialVersionUID = 1L;
+
     public static final Logger LOG = LoggerFactory.getLogger(TableData.class);
 
     @JsonIgnore
     private final Map<String, Object> additionalProperties = new HashMap<>();
+
+    public TableData() {
+        super();
+    }
 
     @JsonAnyGetter
     public Map<String, Object> getAdditionalProperties() {
