@@ -1,6 +1,5 @@
 package org.fusadora.dataflow.utilities;
 
-
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.api.services.bigquery.model.TableFieldSchema;
 import com.google.api.services.bigquery.model.TableRow;
@@ -14,10 +13,26 @@ import org.slf4j.LoggerFactory;
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
-import static org.fusadora.dataflow.utilities.BQTableFieldSchemaConstants.*;
+import static org.fusadora.dataflow.common.BQTableFieldSchemaConstants.CURRENCY_CODES_DOLLAR_REGEX;
+import static org.fusadora.dataflow.common.BQTableFieldSchemaConstants.CURRENCY_CODES_EURO_REGEX;
+import static org.fusadora.dataflow.common.BQTableFieldSchemaConstants.CURRENCY_CODE_DOLLAR_STRING;
+import static org.fusadora.dataflow.common.BQTableFieldSchemaConstants.CURRENCY_CODE_EURO_STRING;
+import static org.fusadora.dataflow.common.BQTableFieldSchemaConstants.INVALID_COLUMN_NAME_REGEX;
+import static org.fusadora.dataflow.common.BQTableFieldSchemaConstants.MODE_OPTIONAL;
+import static org.fusadora.dataflow.common.BQTableFieldSchemaConstants.MODE_REQUIRED;
+import static org.fusadora.dataflow.common.BQTableFieldSchemaConstants.TYPE_BOOLEAN;
+import static org.fusadora.dataflow.common.BQTableFieldSchemaConstants.TYPE_BYTES;
+import static org.fusadora.dataflow.common.BQTableFieldSchemaConstants.TYPE_DATE;
+import static org.fusadora.dataflow.common.BQTableFieldSchemaConstants.TYPE_DATETIME;
+import static org.fusadora.dataflow.common.BQTableFieldSchemaConstants.TYPE_FLOAT;
+import static org.fusadora.dataflow.common.BQTableFieldSchemaConstants.TYPE_INTEGER;
+import static org.fusadora.dataflow.common.BQTableFieldSchemaConstants.TYPE_NUMERIC;
+import static org.fusadora.dataflow.common.BQTableFieldSchemaConstants.TYPE_RECORD;
+import static org.fusadora.dataflow.common.BQTableFieldSchemaConstants.TYPE_STRING;
+import static org.fusadora.dataflow.common.BQTableFieldSchemaConstants.TYPE_TIME;
+import static org.fusadora.dataflow.common.BQTableFieldSchemaConstants.TYPE_TIMESTAMP;
 
 /**
  * Utility to read a bigquery schema json file and convert it to a bigquery
@@ -43,7 +58,7 @@ public class BQSchema implements Serializable {
     }
 
     public BQSchema(List<BQSchemaField> someFieldDefinitions) {
-        fieldDefinitions = someFieldDefinitions;
+        fieldDefinitions = someFieldDefinitions == null ? new ArrayList<>() : new ArrayList<>(someFieldDefinitions);
     }
 
     public static BQSchema fromFile(String fileName) {
@@ -113,8 +128,8 @@ public class BQSchema implements Serializable {
         List<BQSchemaField> bqSchemaFields = new ArrayList<>();
         for (String fieldName : bqFieldNames) {
             BQSchemaField bqSchemaField = new BQSchemaField();
-            bqSchemaField.setMode(BQTableFieldSchemaConstants.MODE_OPTIONAL);
-            bqSchemaField.setType(BQTableFieldSchemaConstants.TYPE_STRING);
+            bqSchemaField.setMode(MODE_OPTIONAL);
+            bqSchemaField.setType(TYPE_STRING);
             bqSchemaField.setName(fieldName);
             bqSchemaFields.add(bqSchemaField);
         }
@@ -135,9 +150,9 @@ public class BQSchema implements Serializable {
     }
 
     public static String cleanSchemaFieldName(String rawSchemaFieldName) {
-        return rawSchemaFieldName.replaceAll(BQTableFieldSchemaConstants.INVALID_COLUMN_NAME_REGEX, "_")
-                .replaceAll(BQTableFieldSchemaConstants.CURRENCY_CODES_EURO_REGEX, BQTableFieldSchemaConstants.CURRENCY_CODE_EURO_STRING)
-                .replaceAll(BQTableFieldSchemaConstants.CURRENCY_CODES_DOLLAR_REGEX, BQTableFieldSchemaConstants.CURRENCY_CODE_DOLLAR_STRING)
+        return rawSchemaFieldName.replaceAll(INVALID_COLUMN_NAME_REGEX, "_")
+                .replaceAll(CURRENCY_CODES_EURO_REGEX, CURRENCY_CODE_EURO_STRING)
+                .replaceAll(CURRENCY_CODES_DOLLAR_REGEX, CURRENCY_CODE_DOLLAR_STRING)
                 .toLowerCase();
     }
 
@@ -148,62 +163,67 @@ public class BQSchema implements Serializable {
      */
     public static List<Field> getFields(List<BQSchemaField> fieldDefinitions) {
         List<Field> fields = new ArrayList<>();
-
-        for (BQSchemaField fieldDefinition : fieldDefinitions) {
-            StandardSQLTypeName type = StandardSQLTypeName.STRING;
-            if (fieldDefinition.getType().equalsIgnoreCase(TYPE_TIMESTAMP)) {
-                type = StandardSQLTypeName.TIMESTAMP;
+        if (fieldDefinitions != null) {
+            for (BQSchemaField fieldDefinition : fieldDefinitions) {
+                if (fieldDefinition != null) {
+                    fields.add(toField(fieldDefinition));
+                }
             }
-            if (fieldDefinition.getType().equalsIgnoreCase(TYPE_INTEGER)) {
-                type = StandardSQLTypeName.INT64;
-            }
-            if (fieldDefinition.getType().equalsIgnoreCase(TYPE_NUMERIC)) {
-                type = StandardSQLTypeName.NUMERIC;
-            }
-            if (fieldDefinition.getType().equalsIgnoreCase(TYPE_FLOAT)) {
-                type = StandardSQLTypeName.FLOAT64;
-            }
-            if (fieldDefinition.getType().equalsIgnoreCase(TYPE_BOOLEAN)) {
-                type = StandardSQLTypeName.BOOL;
-            }
-            if (fieldDefinition.getType().equalsIgnoreCase(TYPE_BYTES)) {
-                type = StandardSQLTypeName.BYTES;
-            }
-            if (fieldDefinition.getType().equalsIgnoreCase(TYPE_DATE)) {
-                type = StandardSQLTypeName.DATE;
-            }
-            if (fieldDefinition.getType().equalsIgnoreCase(TYPE_TIME)) {
-                type = StandardSQLTypeName.TIME;
-            }
-            if (fieldDefinition.getType().equalsIgnoreCase(TYPE_DATETIME)) {
-                type = StandardSQLTypeName.DATETIME;
-            }
-
-            Field field = Field.newBuilder(fieldDefinition.getName(), type)
-                    .setMode(Field.Mode.valueOf(fieldDefinition.getMode()))
-                    .build();
-            fields.add(field);
         }
-        Field field = Field.newBuilder(VERSION_FIELD_NAME, StandardSQLTypeName.INT64)
+        fields.add(Field.newBuilder(VERSION_FIELD_NAME, StandardSQLTypeName.INT64)
                 .setMode(Field.Mode.valueOf(MODE_REQUIRED))
-                .build();
-        fields.add(field);
+                .build());
         return fields;
+    }
+
+    private static Field toField(BQSchemaField fieldDefinition) {
+        StandardSQLTypeName type = sqlTypeFromString(fieldDefinition.getType());
+        Field.Mode mode = fieldModeFromString(fieldDefinition.getMode());
+        return Field.newBuilder(fieldDefinition.getName(), type)
+                .setMode(mode)
+                .build();
+    }
+
+    private static StandardSQLTypeName sqlTypeFromString(String type) {
+        if (type == null) {
+            return StandardSQLTypeName.STRING;
+        }
+        return switch (type.trim().toUpperCase()) {
+            case TYPE_TIMESTAMP -> StandardSQLTypeName.TIMESTAMP;
+            case TYPE_INTEGER   -> StandardSQLTypeName.INT64;
+            case TYPE_NUMERIC   -> StandardSQLTypeName.NUMERIC;
+            case TYPE_FLOAT     -> StandardSQLTypeName.FLOAT64;
+            case TYPE_BOOLEAN   -> StandardSQLTypeName.BOOL;
+            case TYPE_BYTES     -> StandardSQLTypeName.BYTES;
+            case TYPE_DATE      -> StandardSQLTypeName.DATE;
+            case TYPE_TIME      -> StandardSQLTypeName.TIME;
+            case TYPE_DATETIME  -> StandardSQLTypeName.DATETIME;
+            default             -> StandardSQLTypeName.STRING;
+        };
+    }
+
+    private static Field.Mode fieldModeFromString(String mode) {
+        if (mode == null) {
+            return Field.Mode.NULLABLE;
+        }
+        try {
+            return Field.Mode.valueOf(mode);
+        } catch (IllegalArgumentException ex) {
+            LOG.warn("Unknown field mode '{}' - defaulting to NULLABLE", mode);
+            return Field.Mode.NULLABLE;
+        }
     }
 
     public static List<BQSchemaField> generateSchemaFromTableRow(TableRow tablerow) {
         List<BQSchemaField> bqSchemaFields = new ArrayList<>();
 
         if (tablerow != null) {
-            Iterator<String> columns = tablerow.keySet().iterator();
-            while (columns.hasNext()) {
-                String columnName = columns.next();
+            for (String columnName : tablerow.keySet()) {
                 BQSchemaField bqSchemaField = new BQSchemaField();
-                bqSchemaField.setMode(BQTableFieldSchemaConstants.MODE_OPTIONAL);
+                bqSchemaField.setMode(MODE_OPTIONAL);
                 bqSchemaField.setType(TYPE_STRING);
                 bqSchemaField.setName(cleanSchemaFieldName(columnName));
                 bqSchemaFields.add(bqSchemaField);
-                columns.remove();
             }
         }
         return bqSchemaFields;
@@ -237,7 +257,7 @@ public class BQSchema implements Serializable {
     }
 
     public void setFieldDefinitions(List<BQSchemaField> fieldDefinitions) {
-        this.fieldDefinitions = fieldDefinitions;
+        this.fieldDefinitions = fieldDefinitions == null ? new ArrayList<>() : new ArrayList<>(fieldDefinitions);
     }
 
     public int getActualFieldCount() {
@@ -319,7 +339,7 @@ public class BQSchema implements Serializable {
      * @return
      */
     public TableSchema getTableSchema() {
-        TableSchema tableSchema = new TableSchema().setFields(getSchemaFields(fieldDefinitions));
+        TableSchema tableSchema = new TableSchema().setFields(getSchemaFields(getFieldDefinitions()));
         tableSchema.getFields()
                 .add(new TableFieldSchema().setName(VERSION_FIELD_NAME).setType(TYPE_INTEGER).setMode(MODE_REQUIRED));
         return tableSchema;
@@ -331,7 +351,7 @@ public class BQSchema implements Serializable {
      * @return
      */
     public TableSchema getTableSchemaWithOutVersion() {
-        return new TableSchema().setFields(getSchemaFields(fieldDefinitions));
+        return new TableSchema().setFields(getSchemaFields(getFieldDefinitions()));
     }
 
 }

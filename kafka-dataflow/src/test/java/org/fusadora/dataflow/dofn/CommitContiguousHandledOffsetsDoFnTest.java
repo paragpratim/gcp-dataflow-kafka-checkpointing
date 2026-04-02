@@ -7,7 +7,7 @@ import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.testing.TestStream;
 import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.values.KV;
-import org.fusadora.dataflow.testing.BeamTestSupport;
+import org.fusadora.dataflow.testing.stubs.RecordingCheckpointService;
 import org.joda.time.Duration;
 import org.junit.Before;
 import org.junit.Rule;
@@ -24,13 +24,13 @@ public class CommitContiguousHandledOffsetsDoFnTest {
 
     @Before
     public void setUp() {
-        BeamTestSupport.RecordingCheckpointService.reset();
+        RecordingCheckpointService.reset();
     }
 
     @Test
     public void commitsBufferedOffsetsOnceContiguousFrontierArrives() {
-        BeamTestSupport.RecordingCheckpointService checkpointService =
-                new BeamTestSupport.RecordingCheckpointService(Map.of("test_df:0", 0L));
+        RecordingCheckpointService.seed(Map.of("test_df:0", 0L));
+        RecordingCheckpointService checkpointService = new RecordingCheckpointService();
 
         TestStream<KV<String, Long>> stream = TestStream.create(KvCoder.of(StringUtf8Coder.of(), VarLongCoder.of()))
                 .addElements(KV.of("test_df:0", 1L))
@@ -43,14 +43,14 @@ public class CommitContiguousHandledOffsetsDoFnTest {
 
         pipeline.run().waitUntilFinish();
 
-        assertEquals(3L, BeamTestSupport.RecordingCheckpointService.nextOffset("test_df", 0));
-        assertEquals(2L, BeamTestSupport.RecordingCheckpointService.updates().get(1).lastAckedOffset());
+        assertEquals(3L, RecordingCheckpointService.nextOffset("test_df", 0));
+        assertEquals(2L, RecordingCheckpointService.updates().get(1).lastAckedOffset());
     }
 
     @Test
     public void ignoresHandledOffsetsOlderThanCurrentCheckpoint() {
-        BeamTestSupport.RecordingCheckpointService checkpointService =
-                new BeamTestSupport.RecordingCheckpointService(Map.of("test_df:0", 2L));
+        RecordingCheckpointService.seed(Map.of("test_df:0", 2L));
+        RecordingCheckpointService checkpointService = new RecordingCheckpointService();
 
         pipeline.apply(TestStream.create(KvCoder.of(StringUtf8Coder.of(), VarLongCoder.of()))
                         .addElements(KV.of("test_df:0", 0L), KV.of("test_df:0", 1L), KV.of("test_df:0", 2L))
@@ -59,9 +59,8 @@ public class CommitContiguousHandledOffsetsDoFnTest {
 
         pipeline.run().waitUntilFinish();
 
-        assertEquals(3L, BeamTestSupport.RecordingCheckpointService.nextOffset("test_df", 0));
-        assertEquals(1, BeamTestSupport.RecordingCheckpointService.updates().size());
-        assertEquals(2L, BeamTestSupport.RecordingCheckpointService.updates().get(0).lastAckedOffset());
+        assertEquals(3L, RecordingCheckpointService.nextOffset("test_df", 0));
+        assertEquals(1, RecordingCheckpointService.updates().size());
+        assertEquals(2L, RecordingCheckpointService.updates().get(0).lastAckedOffset());
     }
 }
-

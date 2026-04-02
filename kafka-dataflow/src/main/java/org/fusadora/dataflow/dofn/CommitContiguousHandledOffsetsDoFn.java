@@ -7,7 +7,7 @@ import org.apache.beam.sdk.state.StateSpecs;
 import org.apache.beam.sdk.state.ValueState;
 import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.values.KV;
-import org.fusadora.dataflow.ptransform.ContiguousOffsetStateCore;
+import org.fusadora.dataflow.core.ContiguousOffsetStateCore;
 import org.fusadora.dataflow.services.CheckpointService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -99,5 +99,3 @@ public class CommitContiguousHandledOffsetsDoFn extends DoFn<KV<String, Long>, V
     private record PartitionRef(String topic, int partition) {
     }
 }
-
-

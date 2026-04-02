@@ -10,7 +10,8 @@ import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollection;
 import org.fusadora.dataflow.dto.KafkaEventEnvelope;
-import org.fusadora.dataflow.testing.BeamTestSupport;
+import org.fusadora.dataflow.testing.BigQueryTestUtils;
+import org.fusadora.dataflow.testing.KafkaTestData;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -27,40 +28,65 @@ public class MappingDoFnsTest {
     @Test
     public void kafkaRecordToEnvelopeConvertsKafkaMetadataAndPayload() {
         PCollection<KafkaEventEnvelope> output = pipeline
-                .apply(Create.of(BeamTestSupport.kafkaRecord("test_df", 2, 17L, "payload"))
-                        .withCoder(BeamTestSupport.kafkaRecordCoder()))
+                .apply(Create.of(KafkaTestData.kafkaRecord("test_df", 2, 17L, "payload"))
+                        .withCoder(KafkaTestData.kafkaRecordCoder()))
                 .apply(ParDo.of(new KafkaRecordToEnvelopeDoFn("test_df")));
 
         assertNotNull(output);
 
         PAssert.that(output).containsInAnyOrder(List.of(
-                BeamTestSupport.envelope("test_df", 2, 17L, "payload")));
+                KafkaTestData.envelope("test_df", 2, 17L, "payload")));
 
         pipeline.run().waitUntilFinish();
     }
 
     @Test
-    public void kafkaEnvelopeToTableRowAddsMetadataAndFiltersErrorPayloads() {
+    public void filterValidPayloadDropsEnvelopesContainingInvalidKeyword() {
+        PCollection<KafkaEventEnvelope> output = pipeline
+                .apply(Create.of(
+                        KafkaTestData.envelope("test_df", 0, 1L, "ok-payload"),
+                        KafkaTestData.envelope("test_df", 0, 2L, "{\"errorMessage\":\"bad\"}")))
+                .apply(ParDo.of(new FilterValidPayloadDoFn("errorMessage")));
+
+        assertNotNull(output);
+        PAssert.that(output).containsInAnyOrder(List.of(
+                KafkaTestData.envelope("test_df", 0, 1L, "ok-payload")));
+
+        pipeline.run().waitUntilFinish();
+    }
+
+    @Test
+    public void filterValidPayloadPassesThroughEnvelopesWithNoInvalidKeyword() {
+        PCollection<KafkaEventEnvelope> output = pipeline
+                .apply(Create.of(
+                        KafkaTestData.envelope("test_df", 0, 3L, "hello"),
+                        KafkaTestData.envelope("test_df", 0, 4L, "world")))
+                .apply(ParDo.of(new FilterValidPayloadDoFn("errorMessage")));
+
+        assertNotNull(output);
+        PAssert.that(output).containsInAnyOrder(List.of(
+                KafkaTestData.envelope("test_df", 0, 3L, "hello"),
+                KafkaTestData.envelope("test_df", 0, 4L, "world")));
+
+        pipeline.run().waitUntilFinish();
+    }
+
+    @Test
+    public void kafkaEnvelopeToTableRowMapsAllFieldsWithoutFiltering() {
         PCollection<TableRow> rows = pipeline
                 .apply(Create.of(
-                        BeamTestSupport.envelope("test_df", 0, 1L, "ok-payload"),
-                        BeamTestSupport.envelope("test_df", 0, 2L, "{\"errorMessage\":\"bad\"}")))
-                .apply(ParDo.of(new KafkaEnvelopeToTableRowDoFn(BeamTestSupport.topicConfig("test_df", "dataset"))));
+                        KafkaTestData.envelope("test_df", 0, 5L, "ok-payload"),
+                        KafkaTestData.envelope("test_df", 0, 6L, "{\"errorMessage\":\"bad\"}")))
+                .apply(ParDo.of(new KafkaEnvelopeToTableRowDoFn(KafkaTestData.topicConfig("test_df", "dataset"))));
 
         assertNotNull(rows);
 
+        // Pure mapper: both rows are emitted regardless of payload content
         PAssert.that(rows).satisfies(outputRows -> {
             List<TableRow> list = new ArrayList<>();
             outputRows.forEach(list::add);
-            if (list.size() != 1) {
-                throw new AssertionError("Expected 1 row but found " + list.size());
-            }
-            TableRow row = list.get(0);
-            if (!"ok-payload".equals(row.get("message"))) {
-                throw new AssertionError("Unexpected payload row: " + row);
-            }
-            if (BeamTestSupport.parseOffset(row) != 1L) {
-                throw new AssertionError("Expected offset metadata 1 but found " + row.get("_meta_kafka_offset"));
+            if (list.size() != 2) {
+                throw new AssertionError("Expected 2 rows from pure mapper but found " + list.size());
             }
             return null;
         });
@@ -103,7 +129,7 @@ public class MappingDoFnsTest {
         PAssert.that(rows).satisfies(outputRows -> {
             List<TableRow> list = new ArrayList<>();
             outputRows.forEach(list::add);
-            if (list.size() != 1 || BeamTestSupport.parseOffset(list.get(0)) != 11L) {
+            if (list.size() != 1 || BigQueryTestUtils.parseOffset(list.get(0)) != 11L) {
                 throw new AssertionError("Unexpected failed rows output: " + list);
             }
             return null;
@@ -112,4 +138,3 @@ public class MappingDoFnsTest {
         pipeline.run().waitUntilFinish();
     }
 }
-

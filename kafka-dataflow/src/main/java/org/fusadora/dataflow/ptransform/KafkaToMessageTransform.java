@@ -8,12 +8,11 @@ import org.apache.beam.sdk.values.PCollection;
 import org.fusadora.dataflow.dofn.KafkaRecordToEnvelopeDoFn;
 import org.fusadora.dataflow.dto.KafkaEventEnvelope;
 import org.fusadora.dataflow.services.InputService;
-import org.fusadora.dataflow.utilities.PropertyUtils;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * org.fusadora.dataflow.ptransform.KafkaToMessageTransform
- * Convert Kafka message to String message
+ * Reads from Kafka and converts records to {@link KafkaEventEnvelope}.
  *
  * @author Parag Ghosh
  * @since 04/12/2025
@@ -22,18 +21,18 @@ public class KafkaToMessageTransform extends PTransform<@NotNull PBegin, @NotNul
 
     private final InputService inputService;
     private final String topic;
+    private final String brokerHost;
 
-    public KafkaToMessageTransform(InputService inputService, String topic) {
+    public KafkaToMessageTransform(InputService inputService, String topic, String brokerHost) {
         this.inputService = inputService;
         this.topic = topic;
+        this.brokerHost = brokerHost;
     }
 
     @Override
     public @NotNull PCollection<KafkaEventEnvelope> expand(PBegin input) {
-        PCollection<KafkaRecord<String, String>> kafkaRecordPCollection = inputService.readFromKafka(input.getPipeline(),
-                PropertyUtils.getProperty(PropertyUtils.KAFKA_BROKER_HOST),
-                topic, "Get from Kafka [" + topic + "]");
-
+        PCollection<KafkaRecord<String, String>> kafkaRecordPCollection = inputService.readFromKafka(
+                input.getPipeline(), brokerHost, topic, "Get from Kafka [" + topic + "]");
         return kafkaRecordPCollection.apply("Convert to Envelope", ParDo.of(new KafkaRecordToEnvelopeDoFn(topic)));
     }
 }

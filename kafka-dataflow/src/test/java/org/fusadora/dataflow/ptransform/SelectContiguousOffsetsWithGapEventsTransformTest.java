@@ -7,7 +7,8 @@ import org.apache.beam.sdk.testing.TestStream;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollectionTuple;
 import org.fusadora.dataflow.dto.KafkaEventEnvelope;
-import org.fusadora.dataflow.testing.BeamTestSupport;
+import org.fusadora.dataflow.testing.KafkaTestData;
+import org.fusadora.dataflow.testing.stubs.RecordingCheckpointService;
 import org.joda.time.Duration;
 import org.junit.Before;
 import org.junit.Rule;
@@ -25,18 +26,18 @@ public class SelectContiguousOffsetsWithGapEventsTransformTest {
 
     @Before
     public void resetCheckpointStore() {
-        BeamTestSupport.RecordingCheckpointService.reset();
+        RecordingCheckpointService.reset();
     }
 
     @Test
     public void emitsGapTimeoutSideOutputWhenMissingOffsetDoesNotArrive() {
-        BeamTestSupport.RecordingCheckpointService checkpointService =
-                new BeamTestSupport.RecordingCheckpointService(Map.of("test_df:0", 0L));
+        RecordingCheckpointService.seed(Map.of("test_df:0", 0L));
+        RecordingCheckpointService checkpointService = new RecordingCheckpointService();
 
         TestStream<KafkaEventEnvelope> stream = TestStream.create(SerializableCoder.of(KafkaEventEnvelope.class))
                 .addElements(
-                        BeamTestSupport.envelope("test_df", 0, 0L, "a"),
-                        BeamTestSupport.envelope("test_df", 0, 2L, "c"))
+                        KafkaTestData.envelope("test_df", 0, 0L, "a"),
+                        KafkaTestData.envelope("test_df", 0, 2L, "c"))
                 .advanceProcessingTime(Duration.standardMinutes(6))
                 .advanceWatermarkToInfinity();
 
@@ -48,8 +49,8 @@ public class SelectContiguousOffsetsWithGapEventsTransformTest {
 
         PAssert.that(outputs.get(SelectContiguousOffsetsWithGapEventsTransform.CONTIGUOUS_MAIN_TAG))
                 .containsInAnyOrder(
-                        BeamTestSupport.envelope("test_df", 0, 0L, "a"),
-                        BeamTestSupport.envelope("test_df", 0, 2L, "c"));
+                        KafkaTestData.envelope("test_df", 0, 0L, "a"),
+                        KafkaTestData.envelope("test_df", 0, 2L, "c"));
 
         PAssert.that(outputs.get(SelectContiguousOffsetsWithGapEventsTransform.GAP_TIMEOUT_OFFSET_TAG))
                 .containsInAnyOrder(List.of(KV.of("test_df:0", 1L)));
@@ -59,15 +60,15 @@ public class SelectContiguousOffsetsWithGapEventsTransformTest {
 
     @Test
     public void doesNotEmitGapTimeoutSideOutputWhenGapResolvesBeforeTimeout() {
-        BeamTestSupport.RecordingCheckpointService checkpointService =
-                new BeamTestSupport.RecordingCheckpointService(Map.of("test_df:0", 0L));
+        RecordingCheckpointService.seed(Map.of("test_df:0", 0L));
+        RecordingCheckpointService checkpointService = new RecordingCheckpointService();
 
         TestStream<KafkaEventEnvelope> stream = TestStream.create(SerializableCoder.of(KafkaEventEnvelope.class))
                 .addElements(
-                        BeamTestSupport.envelope("test_df", 0, 0L, "a"),
-                        BeamTestSupport.envelope("test_df", 0, 2L, "c"))
+                        KafkaTestData.envelope("test_df", 0, 0L, "a"),
+                        KafkaTestData.envelope("test_df", 0, 2L, "c"))
                 .advanceProcessingTime(Duration.standardSeconds(30))
-                .addElements(BeamTestSupport.envelope("test_df", 0, 1L, "b"))
+                .addElements(KafkaTestData.envelope("test_df", 0, 1L, "b"))
                 .advanceWatermarkToInfinity();
 
         PCollectionTuple outputs = pipeline.apply(stream)
@@ -78,9 +79,9 @@ public class SelectContiguousOffsetsWithGapEventsTransformTest {
 
         PAssert.that(outputs.get(SelectContiguousOffsetsWithGapEventsTransform.CONTIGUOUS_MAIN_TAG))
                 .containsInAnyOrder(
-                        BeamTestSupport.envelope("test_df", 0, 0L, "a"),
-                        BeamTestSupport.envelope("test_df", 0, 1L, "b"),
-                        BeamTestSupport.envelope("test_df", 0, 2L, "c"));
+                        KafkaTestData.envelope("test_df", 0, 0L, "a"),
+                        KafkaTestData.envelope("test_df", 0, 1L, "b"),
+                        KafkaTestData.envelope("test_df", 0, 2L, "c"));
 
         PAssert.that(outputs.get(SelectContiguousOffsetsWithGapEventsTransform.GAP_TIMEOUT_OFFSET_TAG)).empty();
 

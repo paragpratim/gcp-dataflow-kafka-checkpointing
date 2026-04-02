@@ -1,4 +1,4 @@
-package org.fusadora.dataflow.utilities;
+package org.fusadora.dataflow.common;
 
 /**
  * Bigquery schema constants.
@@ -36,3 +36,4 @@ public class BQTableFieldSchemaConstants {
     }
 
 }
+

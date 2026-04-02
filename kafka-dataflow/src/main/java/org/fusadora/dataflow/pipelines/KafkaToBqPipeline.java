@@ -20,7 +20,7 @@ import org.fusadora.dataflow.dofn.ExtractFailedRowsDoFn;
 import org.fusadora.dataflow.dofn.ExtractHandledWriteOffsetsFn;
 import org.fusadora.dataflow.dto.KafkaEventEnvelope;
 import org.fusadora.dataflow.dto.TopicConfig;
-import org.fusadora.dataflow.dto.TopicConfigs;
+import org.fusadora.dataflow.utilities.TopicConfigLoader;
 import org.fusadora.dataflow.ptransform.CommitHandledOffsetsTransform;
 import org.fusadora.dataflow.ptransform.KafkaToMessageTransform;
 import org.fusadora.dataflow.ptransform.SelectContiguousOffsetsWithGapEventsTransform;
@@ -59,21 +59,20 @@ public class KafkaToBqPipeline extends BasePipeline {
     void run(Pipeline pipeline, DataflowOptions pipelineOptions) {
         pipelineOptions.getJobName();
         final String jobId = pipelineOptions.getJobName();
+        final String brokerHost = PropertyUtils.getProperty(PropertyUtils.KAFKA_BROKER_HOST);
         final long gapTimeoutSeconds = parseLongOrDefault(
                 PropertyUtils.getProperty(PropertyUtils.OFFSET_GAP_TIMEOUT_SECONDS)
         );
         final boolean gapAuditEnabled = Boolean.parseBoolean(
                 PropertyUtils.getProperty(PropertyUtils.OFFSET_GAP_AUDIT_ENABLED));
 
-        for (TopicConfig topicConfig : Objects.requireNonNull(TopicConfigs.readConfig()).getTopicConfigList()) {
+        for (TopicConfig topicConfig : Objects.requireNonNull(TopicConfigLoader.readConfig()).getTopicConfigList()) {
             //Bootstrap offsets from checkpoint for the topic
-            getInputService().bootstrapOffsetsFromCheckpoint(
-                    PropertyUtils.getProperty(PropertyUtils.KAFKA_BROKER_HOST),
-                    topicConfig.getTopicName());
+            getInputService().bootstrapOffsetsFromCheckpoint(brokerHost, topicConfig.getTopicName());
 
             //Read from Kafka and convert to KafkaEventEnvelope
             PCollection<KafkaEventEnvelope> kafkaMessage = pipeline.apply("Read from Kafka [" + topicConfig.getTopicName() + "]"
-                    , new KafkaToMessageTransform(getInputService(), topicConfig.getTopicName()));
+                    , new KafkaToMessageTransform(getInputService(), topicConfig.getTopicName(), brokerHost));
 
             //Calculate contiguous kafka offsets and capture timeout-skip offsets for handled checkpointing.
             PCollectionTuple contiguousWithGapEvents = kafkaMessage

@@ -3,7 +3,7 @@ package org.fusadora.dataflow.ptransform;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.Create;
 import org.apache.beam.sdk.values.KV;
-import org.fusadora.dataflow.testing.BeamTestSupport;
+import org.fusadora.dataflow.testing.stubs.RecordingCheckpointService;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -19,13 +19,13 @@ public class CommitHandledOffsetsTransformTest {
 
     @Before
     public void resetCheckpointStore() {
-        BeamTestSupport.RecordingCheckpointService.reset();
+        RecordingCheckpointService.reset();
     }
 
     @Test
     public void commitsContiguousHandledOffsetsAcrossOutOfOrderInputs() {
-        BeamTestSupport.RecordingCheckpointService checkpointService =
-                new BeamTestSupport.RecordingCheckpointService(Map.of("test_df:0", 0L));
+        RecordingCheckpointService.seed(Map.of("test_df:0", 0L));
+        RecordingCheckpointService checkpointService = new RecordingCheckpointService();
 
         pipeline.apply(Create.of(
                         KV.of("test_df:0", 1L),
@@ -35,7 +35,6 @@ public class CommitHandledOffsetsTransformTest {
 
         pipeline.run().waitUntilFinish();
 
-        assertEquals(3L, BeamTestSupport.RecordingCheckpointService.nextOffset("test_df", 0));
+        assertEquals(3L, RecordingCheckpointService.nextOffset("test_df", 0));
     }
 }
-

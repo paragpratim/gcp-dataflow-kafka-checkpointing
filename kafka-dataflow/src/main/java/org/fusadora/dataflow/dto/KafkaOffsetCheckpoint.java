@@ -1,9 +1,21 @@
 package org.fusadora.dataflow.dto;
 
+import com.google.cloud.firestore.DocumentSnapshot;
+
 import java.io.Serial;
+import java.util.HashMap;
+import java.util.Map;
+
+import static org.fusadora.dataflow.common.Constants.CHECKPOINT_DOCUMENT_LAST_ACKED_OFFSET;
+import static org.fusadora.dataflow.common.Constants.CHECKPOINT_DOCUMENT_NEXT_OFFSET_TO_READ;
+import static org.fusadora.dataflow.common.Constants.CHECKPOINT_DOCUMENT_PARTITION;
+import static org.fusadora.dataflow.common.Constants.CHECKPOINT_DOCUMENT_TOPIC;
+import static org.fusadora.dataflow.common.Constants.CHECKPOINT_DOCUMENT_UPDATED_AT;
+import static org.fusadora.dataflow.common.Constants.CHECKPOINT_DOCUMENT_UPDATED_BY;
 
 /**
  * Offset checkpoint document persisted in Firestore.
+ * Single source of truth for field-name mappings between the DTO and the Firestore document schema.
  */
 public class KafkaOffsetCheckpoint extends BaseDto {
 
@@ -19,6 +31,42 @@ public class KafkaOffsetCheckpoint extends BaseDto {
 
     public KafkaOffsetCheckpoint() {
         super();
+    }
+
+    /**
+     * Build a KafkaOffsetCheckpoint from a Firestore DocumentSnapshot.
+     * Returns null if the snapshot does not exist.
+     */
+    public static KafkaOffsetCheckpoint fromSnapshot(DocumentSnapshot snapshot) {
+        if (snapshot == null || !snapshot.exists()) {
+            return null;
+        }
+        KafkaOffsetCheckpoint cp = new KafkaOffsetCheckpoint();
+        cp.setTopic(snapshot.getString(CHECKPOINT_DOCUMENT_TOPIC));
+        Long partition = snapshot.getLong(CHECKPOINT_DOCUMENT_PARTITION);
+        cp.setPartition(partition != null ? partition.intValue() : 0);
+        Long nextOffset = snapshot.getLong(CHECKPOINT_DOCUMENT_NEXT_OFFSET_TO_READ);
+        cp.setNextOffsetToRead(nextOffset != null ? nextOffset : 0L);
+        Long lastAcked = snapshot.getLong(CHECKPOINT_DOCUMENT_LAST_ACKED_OFFSET);
+        cp.setLastAckedOffset(lastAcked != null ? lastAcked : 0L);
+        Long updatedAt = snapshot.getLong(CHECKPOINT_DOCUMENT_UPDATED_AT);
+        cp.setUpdatedAt(updatedAt != null ? updatedAt : 0L);
+        cp.setUpdatedByJobId(snapshot.getString(CHECKPOINT_DOCUMENT_UPDATED_BY));
+        return cp;
+    }
+
+    /**
+     * Serialize this checkpoint to a Firestore-compatible map for persistence.
+     */
+    public Map<String, Object> toMap() {
+        Map<String, Object> map = new HashMap<>();
+        map.put(CHECKPOINT_DOCUMENT_TOPIC, topic);
+        map.put(CHECKPOINT_DOCUMENT_PARTITION, partition);
+        map.put(CHECKPOINT_DOCUMENT_NEXT_OFFSET_TO_READ, nextOffsetToRead);
+        map.put(CHECKPOINT_DOCUMENT_LAST_ACKED_OFFSET, lastAckedOffset);
+        map.put(CHECKPOINT_DOCUMENT_UPDATED_AT, updatedAt);
+        map.put(CHECKPOINT_DOCUMENT_UPDATED_BY, updatedByJobId);
+        return map;
     }
 
     public String getTopic() {

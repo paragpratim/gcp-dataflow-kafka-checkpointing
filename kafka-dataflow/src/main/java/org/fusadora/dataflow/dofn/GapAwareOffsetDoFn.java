@@ -15,9 +15,8 @@ import org.apache.beam.sdk.state.ValueState;
 import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.TupleTag;
+import org.fusadora.dataflow.core.ContiguousOffsetStateCore;
 import org.fusadora.dataflow.dto.KafkaEventEnvelope;
-import org.fusadora.dataflow.ptransform.ContiguousOffsetStateCore;
-import org.fusadora.dataflow.ptransform.SelectContiguousOffsetsTransform;
 import org.fusadora.dataflow.services.CheckpointService;
 import org.joda.time.Duration;
 import org.joda.time.Instant;
@@ -45,11 +44,11 @@ public class GapAwareOffsetDoFn extends DoFn<KV<String, KafkaEventEnvelope>, Kaf
     private final TupleTag<KV<String, Long>> gapTimeoutOffsetTag;
     private final ContiguousOffsetStateCore<KafkaEventEnvelope> offsetCore = new ContiguousOffsetStateCore<>();
 
-    private final Counter gapDetected = Metrics.counter(SelectContiguousOffsetsTransform.class, "gap_detected");
-    private final Counter gapResolvedBeforeTimeout = Metrics.counter(SelectContiguousOffsetsTransform.class,
+    private final Counter gapDetected = Metrics.counter(GapAwareOffsetDoFn.class, "gap_detected");
+    private final Counter gapResolvedBeforeTimeout = Metrics.counter(GapAwareOffsetDoFn.class,
             "gap_resolved_before_timeout");
-    private final Counter gapTimeoutSkip = Metrics.counter(SelectContiguousOffsetsTransform.class, "gap_timeout_skip");
-    private final Counter lateAfterSkip = Metrics.counter(SelectContiguousOffsetsTransform.class, "late_after_skip");
+    private final Counter gapTimeoutSkip = Metrics.counter(GapAwareOffsetDoFn.class, "gap_timeout_skip");
+    private final Counter lateAfterSkip = Metrics.counter(GapAwareOffsetDoFn.class, "late_after_skip");
 
     @DoFn.StateId(STATE_EXPECTED)
     @SuppressWarnings("unused") // Referenced by Beam runtime via @StateId
@@ -176,4 +175,3 @@ public class GapAwareOffsetDoFn extends DoFn<KV<String, KafkaEventEnvelope>, Kaf
                 () -> checkpointService.getNextOffsetToRead(envelope.getTopic(), envelope.getPartition()));
     }
 }
-

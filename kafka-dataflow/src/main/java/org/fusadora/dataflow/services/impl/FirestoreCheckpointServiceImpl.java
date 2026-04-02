@@ -2,6 +2,7 @@ package org.fusadora.dataflow.services.impl;
 
 import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.*;
+import org.fusadora.dataflow.dto.KafkaOffsetCheckpoint;
 import org.fusadora.dataflow.exception.DataFlowException;
 import org.fusadora.dataflow.services.CheckpointService;
 import org.fusadora.dataflow.utilities.PropertyUtils;
@@ -11,10 +12,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
-import static org.fusadora.common.Constants.*;
+import static org.fusadora.dataflow.common.Constants.CHECKPOINT_DOCUMENT_TOPIC;
 
 /**
  * Firestore-backed checkpoint service.
+ * Reads and writes are funnelled through {@link KafkaOffsetCheckpoint} to keep the DTO
+ * and the stored document schema in sync.
  */
 public class FirestoreCheckpointServiceImpl implements CheckpointService {
 
@@ -46,11 +49,8 @@ public class FirestoreCheckpointServiceImpl implements CheckpointService {
         try {
             DocumentReference docRef = checkpoints().document(getDocId(topic, partition));
             DocumentSnapshot snapshot = docRef.get().get();
-            if (!snapshot.exists()) {
-                return 0L;
-            }
-            Long nextOffset = snapshot.getLong(CHECKPOINT_DOCUMENT_NEXT_OFFSET_TO_READ);
-            return nextOffset == null ? 0L : nextOffset;
+            KafkaOffsetCheckpoint checkpoint = KafkaOffsetCheckpoint.fromSnapshot(snapshot);
+            return checkpoint == null ? 0L : checkpoint.getNextOffsetToRead();
         } catch (InterruptedException ie) {
             Thread.currentThread().interrupt();
             throw new DataFlowException("Interrupted while reading checkpoint", ie);
@@ -65,10 +65,9 @@ public class FirestoreCheckpointServiceImpl implements CheckpointService {
         try {
             ApiFuture<QuerySnapshot> queryFuture = checkpoints().whereEqualTo(CHECKPOINT_DOCUMENT_TOPIC, topic).get();
             for (QueryDocumentSnapshot doc : queryFuture.get().getDocuments()) {
-                Long partition = doc.getLong(CHECKPOINT_DOCUMENT_PARTITION);
-                Long nextOffset = doc.getLong(CHECKPOINT_DOCUMENT_NEXT_OFFSET_TO_READ);
-                if (partition != null && nextOffset != null) {
-                    offsetsByPartition.put(partition.intValue(), nextOffset);
+                KafkaOffsetCheckpoint checkpoint = KafkaOffsetCheckpoint.fromSnapshot(doc);
+                if (checkpoint != null) {
+                    offsetsByPartition.put(checkpoint.getPartition(), checkpoint.getNextOffsetToRead());
                 }
             }
             return offsetsByPartition;
@@ -86,22 +85,22 @@ public class FirestoreCheckpointServiceImpl implements CheckpointService {
             DocumentReference docRef = checkpoints().document(getDocId(topic, partition));
             getFirestore().runTransaction(txn -> {
                 DocumentSnapshot snapshot = txn.get(docRef).get();
-                Long nextOffsetLong = snapshot.exists() ? snapshot.getLong(CHECKPOINT_DOCUMENT_NEXT_OFFSET_TO_READ) : null;
-                long currentNextOffset = nextOffsetLong != null ? nextOffsetLong : 0L;
+                KafkaOffsetCheckpoint existing = KafkaOffsetCheckpoint.fromSnapshot(snapshot);
+                long currentNextOffset = existing != null ? existing.getNextOffsetToRead() : 0L;
                 long nextOffsetCandidate = lastAckedOffset + 1;
                 if (nextOffsetCandidate <= currentNextOffset) {
                     return null;
                 }
 
-                Map<String, Object> checkpointData = new HashMap<>();
-                checkpointData.put(CHECKPOINT_DOCUMENT_TOPIC, topic);
-                checkpointData.put(CHECKPOINT_DOCUMENT_PARTITION, partition);
-                checkpointData.put(CHECKPOINT_DOCUMENT_NEXT_OFFSET_TO_READ, nextOffsetCandidate);
-                checkpointData.put(CHECKPOINT_DOCUMENT_LAST_ACKED_OFFSET, lastAckedOffset);
-                checkpointData.put(CHECKPOINT_DOCUMENT_UPDATED_AT, System.currentTimeMillis());
-                checkpointData.put(CHECKPOINT_DOCUMENT_UPDATED_BY, jobId);
+                KafkaOffsetCheckpoint updated = new KafkaOffsetCheckpoint();
+                updated.setTopic(topic);
+                updated.setPartition(partition);
+                updated.setNextOffsetToRead(nextOffsetCandidate);
+                updated.setLastAckedOffset(lastAckedOffset);
+                updated.setUpdatedAt(System.currentTimeMillis());
+                updated.setUpdatedByJobId(jobId);
 
-                txn.set(docRef, checkpointData, SetOptions.merge());
+                txn.set(docRef, updated.toMap(), SetOptions.merge());
                 return null;
             }).get();
         } catch (InterruptedException ie) {

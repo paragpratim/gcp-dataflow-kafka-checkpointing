@@ -1,7 +1,7 @@
-package org.fusadora.common;
+package org.fusadora.dataflow.common;
 
 /**
- * org.fusadora.common.BigquerySchemaConstants
+ * org.fusadora.dataflow.common.BigquerySchemaConstants
  * Constants for bigquery fields.
  *
  * @author Parag Ghosh
@@ -17,3 +17,4 @@ public class BigquerySchemaConstants {
         throw new IllegalStateException("Utility class");
     }
 }
+

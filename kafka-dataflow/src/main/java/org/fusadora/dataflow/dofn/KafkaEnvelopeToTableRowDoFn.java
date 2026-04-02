@@ -2,19 +2,19 @@ package org.fusadora.dataflow.dofn;
 
 import com.google.api.services.bigquery.model.TableRow;
 import org.apache.beam.sdk.transforms.DoFn;
+import org.fusadora.dataflow.common.KafkaMetadataConstants;
 import org.fusadora.dataflow.dto.KafkaEventEnvelope;
 import org.fusadora.dataflow.dto.TopicConfig;
-import org.fusadora.dataflow.ptransform.WriteRawMessageTransform;
 
-import java.util.Date;
 import java.util.Objects;
 
-import static org.fusadora.common.BigquerySchemaConstants.SCHEMA_KAFKA_TOPIC;
-import static org.fusadora.common.BigquerySchemaConstants.SCHEMA_RAW_MESSAGE;
-import static org.fusadora.common.BigquerySchemaConstants.SCHEMA_VERSION;
+import static org.fusadora.dataflow.common.BigquerySchemaConstants.SCHEMA_KAFKA_TOPIC;
+import static org.fusadora.dataflow.common.BigquerySchemaConstants.SCHEMA_RAW_MESSAGE;
+import static org.fusadora.dataflow.common.BigquerySchemaConstants.SCHEMA_VERSION;
 
 /**
- * Converts Kafka envelopes into BigQuery TableRow with checkpoint metadata.
+ * Pure mapping DoFn: converts a {@link KafkaEventEnvelope} into a BigQuery {@link TableRow}.
+ * Payload filtering must be applied upstream (see {@link FilterValidPayloadDoFn}).
  */
 @SuppressWarnings("unused") // Instantiated from pipeline transform wiring
 public class KafkaEnvelopeToTableRowDoFn extends DoFn<KafkaEventEnvelope, TableRow> {
@@ -29,17 +29,15 @@ public class KafkaEnvelopeToTableRowDoFn extends DoFn<KafkaEventEnvelope, TableR
     @ProcessElement
     public void processElement(ProcessContext processContext) {
         KafkaEventEnvelope envelope = Objects.requireNonNull(processContext.element());
-        if (!envelope.getPayload().contains("errorMessage")) {
-            TableRow tr = new TableRow();
-            tr.put(SCHEMA_RAW_MESSAGE, envelope.getPayload());
-            tr.put(SCHEMA_KAFKA_TOPIC, topicConfig.getTopicName());
-            tr.put(SCHEMA_VERSION, new Date().getTime());
-            // Metadata is carried only for post-write checkpointing and ignored by BQ schema.
-            tr.put(WriteRawMessageTransform.META_KAFKA_TOPIC, envelope.getTopic());
-            tr.put(WriteRawMessageTransform.META_KAFKA_PARTITION, envelope.getPartition());
-            tr.put(WriteRawMessageTransform.META_KAFKA_OFFSET, envelope.getOffset());
-            processContext.output(tr);
-        }
+        TableRow tr = new TableRow();
+        tr.put(SCHEMA_RAW_MESSAGE, envelope.getPayload());
+        tr.put(SCHEMA_KAFKA_TOPIC, topicConfig.getTopicName());
+        tr.put(SCHEMA_VERSION, System.currentTimeMillis());
+        // Metadata is carried only for post-write checkpointing and is not part of the BQ schema.
+        tr.put(KafkaMetadataConstants.META_KAFKA_TOPIC, envelope.getTopic());
+        tr.put(KafkaMetadataConstants.META_KAFKA_PARTITION, envelope.getPartition());
+        tr.put(KafkaMetadataConstants.META_KAFKA_OFFSET, envelope.getOffset());
+        processContext.output(tr);
     }
 }
 

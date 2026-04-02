@@ -1,4 +1,4 @@
-package org.fusadora.dataflow.ptransform;
+package org.fusadora.dataflow.core;
 
 import org.apache.beam.sdk.state.MapState;
 import org.apache.beam.sdk.state.ValueState;
@@ -63,4 +63,5 @@ public final class ContiguousOffsetStateCore<T> implements Serializable {
         return min;
     }
 }
+
 

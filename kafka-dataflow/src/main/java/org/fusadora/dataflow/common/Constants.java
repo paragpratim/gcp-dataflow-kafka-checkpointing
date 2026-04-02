@@ -1,7 +1,7 @@
-package org.fusadora.common;
+package org.fusadora.dataflow.common;
 
 /**
- * org.fusadora.common.Constants
+ * org.fusadora.dataflow.common.Constants
  * Constants used across the Fusadora project.
  *
  * @author Parag Ghosh
@@ -21,3 +21,4 @@ public class Constants {
         throw new IllegalStateException("Utility class");
     }
 }
+

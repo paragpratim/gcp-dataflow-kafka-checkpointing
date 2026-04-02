@@ -7,6 +7,16 @@
 
 ## Current Flow (Implemented)
 
+## Diagram (Excalidraw)
+- File: `docs/checkpoint-processing.excalidraw`
+- Quick preview: `docs/checkpoint-processing.svg`
+- Focus areas:
+  - handled-offset derivation from BigQuery WriteResult (success + failure)
+  - merge with gap-timeout offsets before commit
+  - GlobalWindows commit frontier behavior
+  - Firestore checkpoint monotonic update (`nextOffsetToRead`)
+  - restart bootstrap path from Firestore checkpoint to Kafka consumer-group offsets
+
 ```text
 Kafka -> KafkaToMessageTransform (KafkaRecord -> KafkaEventEnvelope)
       -> SelectContiguousOffsetsWithGapEventsTransform
@@ -77,3 +87,10 @@ Handled stream arrives as: `3,1,2` with expected `1`
 - If BigQuery succeeds but checkpoint update fails, replay can happen on restart (duplicates expected).
 - Gap-timeout events are explicit policy decisions; they should be auditable.
 - This design intentionally favors liveness with explicit, observable tradeoffs.
+
+## Contributor Guidance
+- For all new Beam/Dataflow changes, follow the architecture and coding conventions in `.github/copilot-instructions.md`.
+- Keep package boundaries strict (`pipelines`, `ptransform`, `dofn`, `core`, `services`, `dto`, `common`, `di`).
+- Do not introduce `dofn -> ptransform` dependencies; shared logic belongs in `core` and constants in `common`.
+- Keep DTOs pure data holders; config/resource loading belongs in `utilities`.
+
