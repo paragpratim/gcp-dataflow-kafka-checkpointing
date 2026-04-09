@@ -28,7 +28,7 @@ resource "google_project_iam_member" "dataflow_service_account_roles" {
     "roles/storage.admin",
     "roles/dataflow.worker",
     "roles/artifactregistry.reader",
-    "roles/firestore.user",
+    "roles/datastore.user",
   ])
 
   project    = var.project_id
