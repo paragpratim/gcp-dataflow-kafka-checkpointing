@@ -16,7 +16,7 @@
         <main.class>org.fusadora.dataflow.pipelines.PipelineRunner</main.class>
         <!-- Dependency versions -->
         <guice.version>7.0.0</guice.version>
-        <apache.beam.version>2.69.0</apache.beam.version>
+        <apache.beam.version>2.71.0</apache.beam.version>
         <slf4j.version>2.0.17</slf4j.version>
     </properties>
 
@@ -249,7 +249,15 @@
             <version>2.56.0</version>
         </dependency>
 
+        <!-- https://mvnrepository.com/artifact/com.google.cloud/google-cloud-firestore -->
+        <dependency>
+            <groupId>com.google.cloud</groupId>
+            <artifactId>google-cloud-firestore</artifactId>
+            <version>3.33.3</version>
+        </dependency>
+
         <!-- Test -->
+
         <!-- https://mvnrepository.com/artifact/org.junit.jupiter/junit-jupiter-api -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -257,11 +265,29 @@
             <version>6.0.1</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>6.0.1</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.13.2</version>
+            <scope>test</scope>
+        </dependency>
         <!-- https://mvnrepository.com/artifact/nl.jqno.equalsverifier/equalsverifier -->
         <dependency>
             <groupId>nl.jqno.equalsverifier</groupId>
             <artifactId>equalsverifier</artifactId>
             <version>4.2.4</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.tngtech.archunit</groupId>
+            <artifactId>archunit-junit5</artifactId>
+            <version>1.3.0</version>
             <scope>test</scope>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.hamcrest/hamcrest -->

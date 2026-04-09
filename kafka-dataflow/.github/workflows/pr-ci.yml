@@ -1,0 +1,30 @@
+name: PR CI
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - "**"
+
+jobs:
+  validate:
+    name: Build and Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+
+      - name: Verify architecture boundaries (ArchUnit)
+        run: mvn -B -q -Dtest=LayeredArchitectureTest test
+
+      - name: Run full test suite
+        run: mvn -B -q test
+

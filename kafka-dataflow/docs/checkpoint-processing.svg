@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1700" height="520" viewBox="0 0 1700 520" role="img" aria-labelledby="title desc">
+  <title id="title">Kafka to BigQuery checkpoint processing and restartability</title>
+  <desc id="desc">Pipeline flow showing contiguous selection, BigQuery write results, handled-offset merge, commit, Firestore checkpoint update, and restart bootstrap path.</desc>
+
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#222" />
+    </marker>
+    <marker id="arrowGreen" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#0f7b6c" />
+    </marker>
+    <marker id="arrowBlue" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#1c7ed6" />
+    </marker>
+    <marker id="arrowPurple" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#5f3dc4" />
+    </marker>
+  </defs>
+
+  <rect x="60" y="80" width="220" height="72" rx="10" ry="10" fill="#fff" stroke="#222" stroke-width="2"/>
+  <text x="170" y="112" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" fill="#222">Kafka source</text>
+  <text x="170" y="136" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#444">records</text>
+
+  <rect x="340" y="68" width="350" height="96" rx="10" ry="10" fill="#fff" stroke="#222" stroke-width="2"/>
+  <text x="515" y="100" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#222">SelectContiguousOffsetsWithGapEvents</text>
+  <text x="515" y="123" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#444">main contiguous + gap-timeout side output</text>
+
+  <rect x="760" y="68" width="310" height="96" rx="10" ry="10" fill="#fff" stroke="#222" stroke-width="2"/>
+  <text x="915" y="100" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#222">WriteRawMessageTransform</text>
+  <text x="915" y="123" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#444">BigQueryIO WriteResult</text>
+
+  <rect x="1120" y="68" width="340" height="96" rx="10" ry="10" fill="#fff" stroke="#222" stroke-width="2"/>
+  <text x="1290" y="100" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#222">Extract handled offsets</text>
+  <text x="1290" y="123" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#444">success + failure rows</text>
+
+  <rect x="980" y="248" width="480" height="114" rx="10" ry="10" fill="#e6fcf5" stroke="#0f7b6c" stroke-width="2"/>
+  <text x="1220" y="286" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#0f7b6c">Flatten handled offsets + gap-timeout offsets</text>
+  <text x="1220" y="312" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#0f7b6c">GlobalWindows -&gt; CommitHandledOffsetsTransform</text>
+
+  <rect x="420" y="248" width="470" height="124" rx="10" ry="10" fill="#e7f5ff" stroke="#1c7ed6" stroke-width="2"/>
+  <text x="655" y="285" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#1c7ed6">Firestore checkpoint (topic:partition)</text>
+  <text x="655" y="312" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#1c7ed6">nextOffsetToRead = lastAcked + 1</text>
+  <text x="655" y="336" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#1c7ed6">monotonic + transactional updates</text>
+
+  <rect x="60" y="252" width="280" height="114" rx="10" ry="10" fill="#f3f0ff" stroke="#5f3dc4" stroke-width="2"/>
+  <text x="200" y="288" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#5f3dc4">Job restart bootstrap</text>
+  <text x="200" y="314" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#5f3dc4">set Kafka consumer-group</text>
+  <text x="200" y="338" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#5f3dc4">offsets from Firestore</text>
+
+  <line x1="280" y1="116" x2="340" y2="116" stroke="#222" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="690" y1="116" x2="760" y2="116" stroke="#222" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="1070" y1="116" x2="1120" y2="116" stroke="#222" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <line x1="1290" y1="164" x2="1290" y2="248" stroke="#0f7b6c" stroke-width="2" marker-end="url(#arrowGreen)"/>
+  <line x1="980" y1="305" x2="890" y2="305" stroke="#0f7b6c" stroke-width="2" marker-end="url(#arrowGreen)"/>
+
+  <line x1="655" y1="248" x2="655" y2="164" stroke="#1c7ed6" stroke-width="2" marker-end="url(#arrowBlue)"/>
+  <line x1="420" y1="305" x2="340" y2="305" stroke="#5f3dc4" stroke-width="2" marker-end="url(#arrowPurple)"/>
+
+  <text x="615" y="418" font-family="Arial, sans-serif" font-size="20" fill="#111">
+    At-least-once restartability: replay starts from durable checkpoint (duplicates possible, silent loss avoided)
+  </text>
+</svg>
+

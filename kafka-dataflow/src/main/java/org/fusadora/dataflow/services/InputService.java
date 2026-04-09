@@ -8,6 +8,8 @@ import java.io.Serializable;
 
 public interface InputService extends Serializable {
 
+    void bootstrapOffsetsFromCheckpoint(String brokerIp, String topic);
+
     PCollection<KafkaRecord<String, String>> readFromKafka(Pipeline pipeline, String brokerIp, String topic, String transformName);
 
 }
