@@ -8,13 +8,17 @@ import org.fusadora.dataflow.dto.TopicConfig;
 
 import java.util.Objects;
 
-import static org.fusadora.dataflow.common.BigquerySchemaConstants.SCHEMA_KAFKA_TOPIC;
-import static org.fusadora.dataflow.common.BigquerySchemaConstants.SCHEMA_RAW_MESSAGE;
-import static org.fusadora.dataflow.common.BigquerySchemaConstants.SCHEMA_VERSION;
+import static org.fusadora.dataflow.common.BigquerySchemaConstants.*;
 
 /**
- * Pure mapping DoFn: converts a {@link KafkaEventEnvelope} into a BigQuery {@link TableRow}.
- * Payload filtering must be applied upstream (see {@link FilterValidPayloadDoFn}).
+ * org.fusadora.dataflow.dofn.KafkaEnvelopeToTableRowDoFn
+ * This is a Beam DoFn that transforms a KafkaEventEnvelope into a TableRow suitable for BigQuery insertion.
+ * It extracts the raw message payload and enriches it with metadata such as the Kafka topic, partition, and offset.
+ * The version field is set to the current timestamp to facilitate versioning in BigQuery.
+ * This DoFn is designed to be used in a Beam pipeline that reads from Kafka and writes to BigQuery.
+ *
+ * @author Parag Ghosh
+ * @since 10/04/2026
  */
 @SuppressWarnings("unused") // Instantiated from pipeline transform wiring
 public class KafkaEnvelopeToTableRowDoFn extends DoFn<KafkaEventEnvelope, TableRow> {

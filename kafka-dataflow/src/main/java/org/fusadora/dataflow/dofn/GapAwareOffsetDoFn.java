@@ -4,14 +4,7 @@ import org.apache.beam.sdk.coders.SerializableCoder;
 import org.apache.beam.sdk.coders.VarLongCoder;
 import org.apache.beam.sdk.metrics.Counter;
 import org.apache.beam.sdk.metrics.Metrics;
-import org.apache.beam.sdk.state.MapState;
-import org.apache.beam.sdk.state.StateSpec;
-import org.apache.beam.sdk.state.StateSpecs;
-import org.apache.beam.sdk.state.TimeDomain;
-import org.apache.beam.sdk.state.Timer;
-import org.apache.beam.sdk.state.TimerSpec;
-import org.apache.beam.sdk.state.TimerSpecs;
-import org.apache.beam.sdk.state.ValueState;
+import org.apache.beam.sdk.state.*;
 import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.TupleTag;
@@ -26,7 +19,18 @@ import org.slf4j.LoggerFactory;
 import java.util.Objects;
 
 /**
- * Stateful DoFn that emits contiguous offsets per topic-partition and handles gap timeout behavior.
+ * org.fusadora.dataflow.dofn.GapAwareOffsetDoFn
+ * This is a Beam DoFn that processes KafkaEventEnvelopes while tracking offsets and handling gaps in the offset sequence.
+ * It uses state to keep track of the expected next offset, buffered events that have arrived out of order, and the start time of any detected gap.
+ * If a gap is detected (i.e., an event arrives with an offset greater than the expected offset), it buffers the event and starts a timer.
+ * If the gap is not resolved (i.e., the expected offset does not arrive) before the timer fires,
+ * it logs an error and can optionally output the missing offset to a side output for further handling.
+ * If the gap is resolved before the timer fires, it simply clears the gap state and continues processing.
+ * The DoFn also includes metrics to track the number of gaps detected, resolved before timeout, skipped due to timeout,
+ * and late events that arrive after a gap has been skipped.
+ *
+ * @author Parag Ghosh
+ * @since 10/04/2026
  */
 @SuppressWarnings("unused") // Instantiated from pipeline transform wiring
 public class GapAwareOffsetDoFn extends DoFn<KV<String, KafkaEventEnvelope>, KafkaEventEnvelope> {

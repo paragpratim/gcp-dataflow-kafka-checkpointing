@@ -8,9 +8,13 @@ import org.slf4j.LoggerFactory;
 import java.util.Objects;
 
 /**
- * Filters out {@link KafkaEventEnvelope} records whose payload contains a configured
- * invalid-payload keyword. Keeping this concern separate from the mapping DoFn ensures
- * each class has a single responsibility.
+ * org.fusadora.dataflow.dofn.FilterValidPayloadDoFn
+ * This is a Beam DoFn that filters out KafkaEventEnvelope records based on the presence of a specific keyword in their payload.
+ * If the payload contains the configured invalid-payload keyword, the record is dropped and a warning is logged.
+ * Otherwise, the record is passed through to the next stage of the pipeline.
+ *
+ * @author Parag Ghosh
+ * @since 10/04/2026
  */
 @SuppressWarnings("unused") // Instantiated from pipeline transform wiring
 public class FilterValidPayloadDoFn extends DoFn<KafkaEventEnvelope, KafkaEventEnvelope> {

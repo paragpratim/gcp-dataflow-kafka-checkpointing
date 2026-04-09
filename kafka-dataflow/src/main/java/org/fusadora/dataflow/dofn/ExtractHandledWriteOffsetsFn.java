@@ -8,7 +8,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Extracts topic-partition key and offset from BigQuery handled rows.
+ * org.fusadora.dataflow.dofn.ExtractHandledWriteOffsetsFn
+ * This is Beam DoFn to extract the Kafka topic, partition and offset from the success metadata of a write operation.
+ * This is used to track the offsets that have been successfully written to BigQuery, which can then be used for checkpointing
+ * and ensuring exactly-once processing semantics in the data pipeline.
+ *
+ * @author Parag Ghosh
+ * @since 10/04/2026
  */
 @SuppressWarnings("unused") // Instantiated from pipeline transform wiring
 public class ExtractHandledWriteOffsetsFn extends SimpleFunction<TableRow, KV<String, Long>> {

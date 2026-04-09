@@ -4,11 +4,7 @@ import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.transforms.SimpleFunction;
-import org.apache.beam.sdk.values.KV;
-import org.apache.beam.sdk.values.PCollection;
-import org.apache.beam.sdk.values.PCollectionTuple;
-import org.apache.beam.sdk.values.TupleTag;
-import org.apache.beam.sdk.values.TupleTagList;
+import org.apache.beam.sdk.values.*;
 import org.fusadora.dataflow.dofn.GapAwareOffsetDoFn;
 import org.fusadora.dataflow.dto.KafkaEventEnvelope;
 import org.fusadora.dataflow.services.CheckpointService;
@@ -18,7 +14,15 @@ import org.joda.time.Duration;
 import java.util.Objects;
 
 /**
- * Emits contiguous source records and side-output gap-timeout offsets per topic-partition.
+ * org.fusadora.dataflow.ptransform.SelectContiguousOffsetsWithGapEventsTransform
+ * This is a Beam PTransform that takes a PCollection of KafkaEventEnvelope and outputs a PCollectionTuple containing:
+ * - A PCollection of KafkaEventEnvelope with contiguous offsets (main output)
+ * - A PCollection of KV<String, Long> representing topic-partition and offset for which a gap timeout occurred (side output)
+ * The transform uses a DoFn (GapAwareOffsetDoFn) to track offsets for each topic-partition and identify gaps.
+ * If a gap is detected and not filled within the specified timeout, the offset is emitted to the side output.
+ *
+ * @author Parag Ghosh
+ * @since 10/04/2026
  */
 public class SelectContiguousOffsetsWithGapEventsTransform extends
         PTransform<@NotNull PCollection<KafkaEventEnvelope>, @NotNull PCollectionTuple> {

@@ -1,7 +1,7 @@
 package org.fusadora.dataflow.common;
 
 /**
- * Bigquery schema constants.
+ * BigQuery schema constants.
  *
  * @author Parag Ghosh
  * @since 04/12/2025

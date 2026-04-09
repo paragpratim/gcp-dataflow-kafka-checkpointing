@@ -20,7 +20,6 @@ import org.fusadora.dataflow.dofn.ExtractFailedRowsDoFn;
 import org.fusadora.dataflow.dofn.ExtractHandledWriteOffsetsFn;
 import org.fusadora.dataflow.dto.KafkaEventEnvelope;
 import org.fusadora.dataflow.dto.TopicConfig;
-import org.fusadora.dataflow.utilities.TopicConfigLoader;
 import org.fusadora.dataflow.ptransform.CommitHandledOffsetsTransform;
 import org.fusadora.dataflow.ptransform.KafkaToMessageTransform;
 import org.fusadora.dataflow.ptransform.SelectContiguousOffsetsWithGapEventsTransform;
@@ -29,6 +28,7 @@ import org.fusadora.dataflow.services.CheckpointService;
 import org.fusadora.dataflow.services.InputService;
 import org.fusadora.dataflow.services.OutputService;
 import org.fusadora.dataflow.utilities.PropertyUtils;
+import org.fusadora.dataflow.utilities.TopicConfigLoader;
 import org.joda.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +38,8 @@ import java.util.Objects;
 /**
  * org.fusadora.dataflow.pipelines.KafkaToBqPipeline
  * Pipeline to process Kafka messages to BQ.
+ * The pipeline reads from Kafka, identifies contiguous offsets for processing, applies a fixed window, writes to BigQuery,
+ * and captures handled offsets for checkpointing.
  *
  * @author Parag Ghosh
  * @since 04/12/2025

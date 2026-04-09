@@ -4,7 +4,13 @@ import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.values.KV;
 
 /**
- * Filters out invalid extracted offset rows.
+ * org.fusadora.dataflow.dofn.DropInvalidHandledRowsFn
+ * This is a Beam DoFn that filters out invalid rows from a PCollection of KV<String, Long>.
+ * It checks if the key is not blank and the value is not equal to a predefined invalid offset (Long.MIN_VALUE).
+ * If both conditions are met, it outputs the KV pair; otherwise, it discards it.
+ *
+ * @author Parag Ghosh
+ * @since 10/04/2026
  */
 @SuppressWarnings("unused") // Instantiated from pipeline transform wiring
 public class DropInvalidHandledRowsFn extends DoFn<KV<String, Long>, KV<String, Long>> {

@@ -11,10 +11,17 @@ import org.fusadora.dataflow.dto.KafkaEventEnvelope;
 import org.fusadora.dataflow.services.CheckpointService;
 import org.jetbrains.annotations.NotNull;
 import org.joda.time.Duration;
+
 import java.util.Objects;
 
 /**
- * Emits only contiguous offsets per topic-partition, starting from the persisted checkpoint offset.
+ * org.fusadora.dataflow.ptransform.SelectContiguousOffsetsTransform
+ * This is a Beam PTransform that takes a PCollection of KafkaEventEnvelope and filters out events to ensure that only contiguous offsets are processed.
+ * It uses a CheckpointService to track the last processed offsets for each topic-partition and waits for a specified gap wait timeout
+ * to allow for any missing offsets to arrive before proceeding with processing.
+ *
+ * @author Parag Ghosh
+ * @since 10/04/2026
  */
 public class SelectContiguousOffsetsTransform
         extends PTransform<@NotNull PCollection<KafkaEventEnvelope>, @NotNull PCollection<KafkaEventEnvelope>> {

@@ -12,7 +12,7 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * org.fusadora.dataflow.ptransform.KafkaToMessageTransform
- * Reads from Kafka and converts records to {@link KafkaEventEnvelope}.
+ * This is a Beam PTransform that reads from Kafka and converts records to {@link KafkaEventEnvelope}.
  *
  * @author Parag Ghosh
  * @since 04/12/2025

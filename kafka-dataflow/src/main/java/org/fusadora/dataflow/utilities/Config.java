@@ -15,8 +15,7 @@ import java.net.URL;
 import java.util.List;
 
 /**
- * Common utilities to read and parse Properties configuration file using apache
- * commons configuration library.
+ * Common utilities to read and parse Properties configuration file using Apache Commons configuration library.
  *
  * @author Parag Ghosh
  * @since 04/12/2025

@@ -15,7 +15,15 @@ import org.slf4j.LoggerFactory;
 import java.util.Objects;
 
 /**
- * Advances checkpoints only across contiguous handled offsets per topic-partition.
+ * org.fusadora.dataflow.dofn.CommitContiguousHandledOffsetsDoFn
+ * This is a Beam DoFn that processes KV<String, Long> elements representing offsets for specific partitions of a topic.
+ * The key is expected to be in the format "topic:partition" and the value is the offset that has been handled.
+ * The DoFn maintains state to track the expected next offset for each partition and buffers out-of-order offsets until they can be committed contiguously.
+ * When contiguous offsets are emitted, it updates the checkpoint service with the latest committed offset for the corresponding partition.
+ * The DoFn uses two state variables: one for tracking the expected next offset and another for buffering out-of-order offsets.
+ *
+ * @author Parag Ghosh
+ * @since 10/04/2026
  */
 @SuppressWarnings("unused") // Instantiated from pipeline transform wiring
 public class CommitContiguousHandledOffsetsDoFn extends DoFn<KV<String, Long>, Void> {
@@ -42,6 +50,24 @@ public class CommitContiguousHandledOffsetsDoFn extends DoFn<KV<String, Long>, V
     public CommitContiguousHandledOffsetsDoFn(CheckpointService checkpointService, String jobId) {
         this.checkpointService = Objects.requireNonNull(checkpointService, "checkpointService must not be null");
         this.jobId = Objects.requireNonNull(jobId, "jobId must not be null");
+    }
+
+    private static PartitionRef parsePartitionRef(String key) {
+        if (key == null || key.isBlank()) {
+            return null;
+        }
+
+        String[] keyParts = key.split(KEY_SEPARATOR, -1);
+        if (keyParts.length != EXPECTED_KEY_PARTS || keyParts[0].isBlank()) {
+            return null;
+        }
+
+        try {
+            return new PartitionRef(keyParts[0], Integer.parseInt(keyParts[1]));
+        } catch (NumberFormatException nfe) {
+            LOG.warn("Unable to parse partition from key={}", key);
+            return null;
+        }
     }
 
     @SuppressWarnings("unused") // Invoked by Beam runtime via @ProcessElement
@@ -75,24 +101,6 @@ public class CommitContiguousHandledOffsetsDoFn extends DoFn<KV<String, Long>, V
             checkpointService.updateOffsetCheckpoint(partitionRef.topic, partitionRef.partition, lastAckedOffset, jobId);
             LOG.info("Checkpoint updated for {}:{} lastAckedOffset={}",
                     partitionRef.topic, partitionRef.partition, lastAckedOffset);
-        }
-    }
-
-    private static PartitionRef parsePartitionRef(String key) {
-        if (key == null || key.isBlank()) {
-            return null;
-        }
-
-        String[] keyParts = key.split(KEY_SEPARATOR, -1);
-        if (keyParts.length != EXPECTED_KEY_PARTS || keyParts[0].isBlank()) {
-            return null;
-        }
-
-        try {
-            return new PartitionRef(keyParts[0], Integer.parseInt(keyParts[1]));
-        } catch (NumberFormatException nfe) {
-            LOG.warn("Unable to parse partition from key={}", key);
-            return null;
         }
     }
 

@@ -6,16 +6,16 @@ import java.io.Serial;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.fusadora.dataflow.common.Constants.CHECKPOINT_DOCUMENT_LAST_ACKED_OFFSET;
-import static org.fusadora.dataflow.common.Constants.CHECKPOINT_DOCUMENT_NEXT_OFFSET_TO_READ;
-import static org.fusadora.dataflow.common.Constants.CHECKPOINT_DOCUMENT_PARTITION;
-import static org.fusadora.dataflow.common.Constants.CHECKPOINT_DOCUMENT_TOPIC;
-import static org.fusadora.dataflow.common.Constants.CHECKPOINT_DOCUMENT_UPDATED_AT;
-import static org.fusadora.dataflow.common.Constants.CHECKPOINT_DOCUMENT_UPDATED_BY;
+import static org.fusadora.dataflow.common.Constants.*;
 
 /**
- * Offset checkpoint document persisted in Firestore.
- * Single source of truth for field-name mappings between the DTO and the Firestore document schema.
+ * org.fusadora.dataflow.dto.KafkaOffsetCheckpoint
+ * DTO representing the Kafka offset checkpoint for a specific topic and partition.
+ * This class is used to track the next offset to read and the last acknowledged offset for a Kafka consumer,
+ * along with metadata about when it was last updated and by which job.
+ *
+ * @author Parag Ghosh
+ * @since 10/04/2026
  */
 public class KafkaOffsetCheckpoint extends BaseDto {
 
@@ -36,6 +36,8 @@ public class KafkaOffsetCheckpoint extends BaseDto {
     /**
      * Build a KafkaOffsetCheckpoint from a Firestore DocumentSnapshot.
      * Returns null if the snapshot does not exist.
+     *
+     * @param snapshot the Firestore document snapshot containing the checkpoint data
      */
     public static KafkaOffsetCheckpoint fromSnapshot(DocumentSnapshot snapshot) {
         if (snapshot == null || !snapshot.exists()) {

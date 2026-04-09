@@ -7,7 +7,13 @@ import java.io.Serial;
 import java.util.Objects;
 
 /**
- * Carries Kafka metadata and payload through the pipeline.
+ * org.fusadora.dataflow.dto.KafkaEventEnvelope
+ * DTO to represent a Kafka event with topic, partition, offset and payload.
+ * This is used to encapsulate the Kafka event data and metadata for processing in the dataflow pipeline.
+ * The partition key is derived from the topic and partition to ensure that events from the same partition are processed together, maintaining order.
+ *
+ * @author Parag Ghosh
+ * @since 10/04/2026
  */
 @DefaultCoder(SerializableCoder.class)
 public class KafkaEventEnvelope extends BaseDto {

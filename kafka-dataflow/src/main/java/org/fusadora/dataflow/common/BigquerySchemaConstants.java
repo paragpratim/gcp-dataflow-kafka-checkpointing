@@ -2,7 +2,7 @@ package org.fusadora.dataflow.common;
 
 /**
  * org.fusadora.dataflow.common.BigquerySchemaConstants
- * Constants for bigquery fields.
+ * Constants for BigQuery fields.
  *
  * @author Parag Ghosh
  * @since 04/12/2025

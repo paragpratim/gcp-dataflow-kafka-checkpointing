@@ -24,7 +24,7 @@ public class GuiceInitialiser {
     }
 
     /**
-     * Get an instance of the given class with Guice initialised.
+     * Get an instance of the given class with Guice initialized.
      *
      * @param clazz the class to get an instance of
      * @param <T>   the class type
@@ -38,7 +38,7 @@ public class GuiceInitialiser {
     }
 
     /**
-     * Get a named instance of the given class with Guice initialised.
+     * Get a named instance of the given class with Guice initialized.
      *
      * @param clazz the class to get an instance of
      * @param <T>   the class type

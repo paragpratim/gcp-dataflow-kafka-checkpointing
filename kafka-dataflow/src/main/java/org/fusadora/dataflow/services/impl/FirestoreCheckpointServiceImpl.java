@@ -2,11 +2,11 @@ package org.fusadora.dataflow.services.impl;
 
 import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.*;
+import org.apache.commons.lang3.StringUtils;
 import org.fusadora.dataflow.dto.KafkaOffsetCheckpoint;
 import org.fusadora.dataflow.exception.DataFlowException;
 import org.fusadora.dataflow.services.CheckpointService;
 import org.fusadora.dataflow.utilities.PropertyUtils;
-import org.apache.commons.lang3.StringUtils;
 
 import java.io.Serial;
 import java.util.HashMap;
@@ -16,9 +16,13 @@ import java.util.concurrent.ExecutionException;
 import static org.fusadora.dataflow.common.Constants.CHECKPOINT_DOCUMENT_TOPIC;
 
 /**
+ * org.fusadora.dataflow.services.impl.FirestoreCheckpointServiceImpl
  * Firestore-backed checkpoint service.
- * Reads and writes are funnelled through {@link KafkaOffsetCheckpoint} to keep the DTO
+ * Reads and writes are funneled through {@link KafkaOffsetCheckpoint} to keep the DTO
  * and the stored document schema in sync.
+ *
+ * @author Parag Ghosh
+ * @since 10/04/2026
  */
 public class FirestoreCheckpointServiceImpl implements CheckpointService {
 
@@ -27,6 +31,11 @@ public class FirestoreCheckpointServiceImpl implements CheckpointService {
 
     private transient Firestore firestore;
 
+    /**
+     * Lazily initializes the Firestore client. The client is thread-safe and can be shared across threads.
+     *
+     * @return Firestore client instance
+     */
     private Firestore getFirestore() {
         if (firestore == null) {
             FirestoreOptions.Builder optionsBuilder = FirestoreOptions.getDefaultInstance().toBuilder()
@@ -43,14 +52,33 @@ public class FirestoreCheckpointServiceImpl implements CheckpointService {
         return firestore;
     }
 
+    /**
+     * Helper method to get the Firestore collection reference for checkpoints. The collection name is read from properties.
+     *
+     * @return CollectionReference for checkpoints
+     */
     private CollectionReference checkpoints() {
         return getFirestore().collection(PropertyUtils.getProperty(PropertyUtils.CHECKPOINT_COLLECTION));
     }
 
+    /**
+     * Helper method to construct a unique document ID for a given topic and partition. This ensures that each topic-partition pair has a single checkpoint document.
+     *
+     * @param topic     the Kafka topic name
+     * @param partition the Kafka partition number
+     * @return a unique document ID in the format "topic:partition"
+     */
     private String getDocId(String topic, int partition) {
         return topic + ":" + partition;
     }
 
+    /**
+     * Retrieves the next offset to read for a given topic and partition. If no checkpoint exists, returns 0.
+     *
+     * @param topic     the Kafka topic name
+     * @param partition the Kafka partition number
+     * @return the next offset to read, or 0 if no checkpoint exists
+     */
     @Override
     public long getNextOffsetToRead(String topic, int partition) {
         try {
@@ -66,6 +94,13 @@ public class FirestoreCheckpointServiceImpl implements CheckpointService {
         }
     }
 
+    /**
+     * Retrieves the next offsets to read for all partitions of a given topic. Returns a map of partition numbers to their respective next offsets.
+     * If no checkpoints exist for the topic, returns an empty map.
+     *
+     * @param topic the Kafka topic name
+     * @return a map of partition numbers to next offsets to read
+     */
     @Override
     public Map<Integer, Long> getTopicPartitionOffsets(String topic) {
         Map<Integer, Long> offsetsByPartition = new HashMap<>();
@@ -86,6 +121,16 @@ public class FirestoreCheckpointServiceImpl implements CheckpointService {
         }
     }
 
+    /**
+     * Updates the checkpoint for a given topic and partition. The update is performed in a transaction to ensure atomicity and to handle concurrent updates correctly.
+     * The method checks the existing checkpoint and only updates it if the new next offset candidate (lastAckedOffset + 1) is greater than the current next offset to read.
+     * This prevents regressing the checkpoint in case of out-of-order acknowledgments.
+     *
+     * @param topic           the Kafka topic name
+     * @param partition       the Kafka partition number
+     * @param lastAckedOffset the last offset that was acknowledged as processed. The next offset to read will be set to lastAckedOffset + 1.
+     * @param jobId           the ID of the job that is updating the checkpoint, used for auditing purposes
+     */
     @Override
     public void updateOffsetCheckpoint(String topic, int partition, long lastAckedOffset, String jobId) {
         try {
