@@ -33,6 +33,7 @@ public final class PropertyUtils {
 
     // Checkpoint
     public static final String CHECKPOINT_COLLECTION = "checkpoint.collection";
+    public static final String CHECKPOINT_FIRESTORE_DATABASE_ID = "checkpoint.firestore.database.id";
     public static final String CHECKPOINT_BOOTSTRAP_ENABLED = "checkpoint.bootstrap.enabled";
     public static final String OFFSET_GAP_TIMEOUT_SECONDS = "offset.gap.timeout.seconds";
     public static final String OFFSET_GAP_AUDIT_ENABLED = "offset.gap.audit.enabled";

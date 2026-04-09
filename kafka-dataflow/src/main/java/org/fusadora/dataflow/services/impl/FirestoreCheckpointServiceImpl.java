@@ -6,6 +6,7 @@ import org.fusadora.dataflow.dto.KafkaOffsetCheckpoint;
 import org.fusadora.dataflow.exception.DataFlowException;
 import org.fusadora.dataflow.services.CheckpointService;
 import org.fusadora.dataflow.utilities.PropertyUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.Serial;
 import java.util.HashMap;
@@ -28,9 +29,15 @@ public class FirestoreCheckpointServiceImpl implements CheckpointService {
 
     private Firestore getFirestore() {
         if (firestore == null) {
-            FirestoreOptions options = FirestoreOptions.getDefaultInstance().toBuilder()
-                    .setProjectId(PropertyUtils.getProperty(PropertyUtils.PROJECT_NAME))
-                    .build();
+            FirestoreOptions.Builder optionsBuilder = FirestoreOptions.getDefaultInstance().toBuilder()
+                    .setProjectId(PropertyUtils.getProperty(PropertyUtils.PROJECT_NAME));
+
+            String databaseId = PropertyUtils.getProperty(PropertyUtils.CHECKPOINT_FIRESTORE_DATABASE_ID);
+            if (StringUtils.isNotBlank(databaseId)) {
+                optionsBuilder.setDatabaseId(databaseId);
+            }
+
+            FirestoreOptions options = optionsBuilder.build();
             firestore = options.getService();
         }
         return firestore;
