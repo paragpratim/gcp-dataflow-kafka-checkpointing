@@ -71,3 +71,8 @@ output "artifact_registry_repository_name" {
   description = "The name of the created Artifact Registry repository."
   value       = google_artifact_registry_repository.dataflow_artifact_registry.name
 }
+
+output "firestore_database_name" {
+  description = "The name of the created Firestore database for Kafka checkpointing."
+  value       = google_firestore_database.dataflow_kafka_checkpointing_firestore.name
+}
