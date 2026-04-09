@@ -28,7 +28,7 @@ resource "google_project_iam_member" "dataflow_service_account_roles" {
     "roles/storage.admin",
     "roles/dataflow.worker",
     "roles/artifactregistry.reader",
-    # "roles/firestore.user",
+    "roles/firestore.user",
   ])
 
   project    = var.project_id
@@ -172,13 +172,13 @@ resource "google_compute_router_nat" "dataflow_nat" {
   depends_on = [google_compute_subnetwork.dataflow_subnet]
 }
 
-# # Create Firestore database for Kafka checkpointing
-# resource "google_firestore_database" "dataflow_kafka_checkpointing_firestore" {
-#   name             = "dataflow-kafka-checkpointing"
-#   project          = var.project_id
-#   location_id      = var.region
-#   type             = "FIRESTORE_NATIVE"
-#   database_edition = "STANDARD"
+# Create Firestore database for Kafka checkpointing
+resource "google_firestore_database" "dataflow_kafka_checkpointing_firestore" {
+  name             = "dataflow-kafka-checkpointing"
+  project          = var.project_id
+  location_id      = var.region
+  type             = "FIRESTORE_NATIVE"
+  database_edition = "STANDARD"
 
-#   depends_on = [google_project_service.required_apis]
-# }
+  depends_on = [google_project_service.required_apis]
+}
