@@ -80,6 +80,24 @@ class KafkaToBqPipelineTest {
         assertEquals(3L, RecordingCheckpointService.nextOffset("test_df", 0));
     }
 
+    @Test
+    void pipelineMergesHandledOffsetsAcrossBranchesWithoutWindowMismatch() {
+        TestInputService.setSourceTransform(
+                TestStream.create(KafkaTestData.kafkaRecordCoder())
+                        .addElements(
+                                KafkaTestData.kafkaRecord("test_df", 0, 0L, "a"),
+                                KafkaTestData.kafkaRecord("test_df", 0, 2L, "c"))
+                        .advanceProcessingTime(Duration.standardMinutes(6))
+                        .advanceWatermarkToInfinity());
+        // Offset 2 is treated as handled via failed-write path, while gap-timeout path emits missing offset 1.
+        TestOutputService.setFailingOffsets(Set.of(2L));
+        RecordingCheckpointService.seed(Map.of("test_df:0", 0L));
+
+        runPipeline("job-windowfn-regression");
+
+        assertEquals(3L, RecordingCheckpointService.nextOffset("test_df", 0));
+    }
+
     private void runPipeline(String jobName) {
         DataflowOptions options = PipelineOptionsFactory.create().as(DataflowOptions.class);
         options.setRunner(DirectRunner.class);

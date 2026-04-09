@@ -113,13 +113,19 @@ public class KafkaToBqPipeline extends BasePipeline {
                     .apply("Drop invalid handled rows [" + topicConfig.getTopicName() + "]",
                             ParDo.of(new DropInvalidHandledRowsFn()));
 
+            // Commit state is key+window scoped, so normalize both inputs to a single global window before merge.
+            PCollection<KV<String, Long>> handledOffsetsFromBqGlobal = handledOffsetsFromBq
+                    .apply("Global Window Handled BQ Offsets [" + topicConfig.getTopicName() + "]",
+                            Window.into(new GlobalWindows()));
+
+            PCollection<KV<String, Long>> sourceGapTimeoutOffsetsGlobal = sourceGapTimeoutOffsets
+                    .apply("Global Window Gap Timeout Offsets [" + topicConfig.getTopicName() + "]",
+                            Window.into(new GlobalWindows()));
+
             //Merge source gap-timeout offsets with BQ handled offsets and commit from one stream.
-            PCollectionList.of(handledOffsetsFromBq)
-                    .and(sourceGapTimeoutOffsets)
+            PCollectionList.of(handledOffsetsFromBqGlobal)
+                    .and(sourceGapTimeoutOffsetsGlobal)
                     .apply("Merge All Handled Offsets [" + topicConfig.getTopicName() + "]", Flatten.pCollections())
-                    // State in commit DoFn is key+window scoped; use one global window to avoid split contiguous state.
-                    .apply("Re-window Handled Offsets For Commit [" + topicConfig.getTopicName() + "]",
-                            Window.into(new GlobalWindows()))
                     .apply("Commit Offsets From Handled Stream [" + topicConfig.getTopicName() + "]",
                             new CommitHandledOffsetsTransform(getCheckpointService(), jobId));
 
