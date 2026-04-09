@@ -1,6 +1,6 @@
 # Copilot Skills: Apache Beam Dataflow Architecture for This Repository
 
-Use these project-specific skills whenever generating or modifying code in this repository.
+Use these project-specific skills whenever generating or modifying code in the kafka-dataflow java project in this repository.
 
 ## 1) Layered package structure (keep boundaries strict)
 

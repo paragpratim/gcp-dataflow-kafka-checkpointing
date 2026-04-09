@@ -23,8 +23,10 @@ jobs:
           cache: maven
 
       - name: Verify architecture boundaries (ArchUnit)
+        working-directory: kafka-dataflow
         run: mvn -B -q -Dtest=LayeredArchitectureTest test
 
       - name: Run full test suite
+        working-directory: kafka-dataflow
         run: mvn -B -q test
 
