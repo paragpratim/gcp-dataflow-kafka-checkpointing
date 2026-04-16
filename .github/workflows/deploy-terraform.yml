@@ -60,6 +60,20 @@ jobs:
         with:
           terraform_version: 1.6.0
 
+      - name: Cleanup legacy workflow IAM state
+        working-directory: terraform
+        run: |
+          set -euo pipefail
+
+          LEGACY_RESOURCE="module.dataflow_workflow_orchestrator[0].google_project_iam_member.workflow_dataflow_developer"
+
+          if terraform state list | grep -Fx "$LEGACY_RESOURCE" >/dev/null; then
+            terraform state rm "$LEGACY_RESOURCE"
+            echo "Removed legacy Terraform state entry: $LEGACY_RESOURCE"
+          else
+            echo "Legacy Terraform state entry not present: $LEGACY_RESOURCE"
+          fi
+
       - name: Terraform Plan
         id: plan
         working-directory: terraform
