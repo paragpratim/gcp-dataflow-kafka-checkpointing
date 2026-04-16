@@ -60,22 +60,6 @@ jobs:
         with:
           terraform_version: 1.6.0
 
-      - name: Cleanup legacy Terraform state
-        working-directory: terraform
-        run: |
-          set -euo pipefail
-
-          echo "Removing legacy state entries from removed dataflow_flex_streaming module (if present)..."
-
-          terraform state rm 'module.dataflow_flex_streaming[0].local_file.flex_template_spec' || true
-          terraform state rm 'module.dataflow_flex_streaming[0].google_storage_bucket_object.flex_template_spec' || true
-          terraform state rm 'module.dataflow_flex_streaming[0].google_dataflow_flex_template_job.dataflow_flex_job' || true
-
-          # Cleanup any no-index variant if it exists in older states.
-          terraform state rm 'module.dataflow_flex_streaming.local_file.flex_template_spec' || true
-          terraform state rm 'module.dataflow_flex_streaming.google_storage_bucket_object.flex_template_spec' || true
-          terraform state rm 'module.dataflow_flex_streaming.google_dataflow_flex_template_job.dataflow_flex_job' || true
-
       - name: Terraform Plan
         id: plan
         working-directory: terraform

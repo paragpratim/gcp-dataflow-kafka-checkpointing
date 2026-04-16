@@ -3,7 +3,7 @@ main:
   steps:
     - init:
         assign:
-          - args_map: ${default(args, {})}
+          - args_map: ${default(args, json.decode("{}"))}
           - action: ${default(map.get(args_map, "action"), "start")}
           - stop_mode: ${default(map.get(args_map, "stop_mode"), "drain")}
           - project_id: ${map.get(args_map, "project_id")}
@@ -11,7 +11,7 @@ main:
           - job_name: ${map.get(args_map, "job_name")}
           - is_streaming: ${default(map.get(args_map, "is_streaming"), true)}
           - container_spec_gcs_path: ${map.get(args_map, "container_spec_gcs_path")}
-          - launch_parameters: ${default(map.get(args_map, "parameters"), {})}
+          - launch_parameters: ${default(map.get(args_map, "parameters"), json.decode("{}"))}
           - subnetwork: ${map.get(args_map, "subnetwork")}
           - service_account_email: ${map.get(args_map, "service_account_email")}
           - temp_location: ${map.get(args_map, "temp_location")}
@@ -35,33 +35,33 @@ main:
 
     - validate_required_inputs:
         switch:
-          - condition: ${project_id == null || project_id == ""}
+          - condition: ${project_id == null or project_id == ""}
             raise: "Missing required input: project_id"
-          - condition: ${region == null || region == ""}
+          - condition: ${region == null or region == ""}
             raise: "Missing required input: region"
-          - condition: ${job_name == null || job_name == ""}
+          - condition: ${job_name == null or job_name == ""}
             raise: "Missing required input: job_name"
 
     - validate_action_inputs:
         switch:
-          - condition: ${action != "start" && action != "stop"}
+          - condition: ${action != "start" and action != "stop"}
             raise: "Invalid input: action must be one of [start, stop]"
-          - condition: ${action == "stop" && stop_mode != "drain" && stop_mode != "cancel"}
+          - condition: ${action == "stop" and stop_mode != "drain" and stop_mode != "cancel"}
             raise: "Invalid input: stop_mode must be one of [drain, cancel]"
 
     - validate_start_inputs:
         switch:
           - condition: ${action != "start"}
             next: list_jobs
-          - condition: ${container_spec_gcs_path == null || container_spec_gcs_path == ""}
+          - condition: ${container_spec_gcs_path == null or container_spec_gcs_path == ""}
             raise: "Missing required input for action=start: container_spec_gcs_path"
-          - condition: ${subnetwork == null || subnetwork == ""}
+          - condition: ${subnetwork == null or subnetwork == ""}
             raise: "Missing required input for action=start: subnetwork"
-          - condition: ${service_account_email == null || service_account_email == ""}
+          - condition: ${service_account_email == null or service_account_email == ""}
             raise: "Missing required input for action=start: service_account_email"
-          - condition: ${temp_location == null || temp_location == ""}
+          - condition: ${temp_location == null or temp_location == ""}
             raise: "Missing required input for action=start: temp_location"
-          - condition: ${staging_location == null || staging_location == ""}
+          - condition: ${staging_location == null or staging_location == ""}
             raise: "Missing required input for action=start: staging_location"
 
     - list_jobs:
@@ -81,7 +81,7 @@ main:
           steps:
             - evaluate_job:
                 switch:
-                  - condition: ${matched_job_id == "" && job.name == job_name && (job.currentState == "JOB_STATE_RUNNING" || job.currentState == "JOB_STATE_DRAINING" || job.currentState == "JOB_STATE_PENDING" || job.currentState == "JOB_STATE_QUEUED")}
+                  - condition: ${matched_job_id == "" and job.name == job_name and (job.currentState == "JOB_STATE_RUNNING" or job.currentState == "JOB_STATE_DRAINING" or job.currentState == "JOB_STATE_PENDING" or job.currentState == "JOB_STATE_QUEUED")}
                     steps:
                       - mark_running:
                           assign:
