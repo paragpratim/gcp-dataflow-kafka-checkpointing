@@ -8,7 +8,7 @@ main:
           - stop_mode: ${default(map.get(args_map, "stop_mode"), "drain")}
           - project_id: ${map.get(args_map, "project_id")}
           - region: ${map.get(args_map, "region")}
-          - job_name: ${map.get(args_map, "job_name")}
+          - job_name: ${text.to_lower(map.get(args_map, "job_name"))}
           - is_streaming: ${default(map.get(args_map, "is_streaming"), true)}
           - container_spec_gcs_path: ${map.get(args_map, "container_spec_gcs_path")}
           - launch_parameters: ${default(map.get(args_map, "parameters"), json.decode("{}"))}
