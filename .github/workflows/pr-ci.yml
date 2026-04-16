@@ -27,9 +27,9 @@ jobs:
 
       - name: Verify architecture boundaries (ArchUnit)
         working-directory: kafka-dataflow
-        run: mvn -B -q -Dtest=LayeredArchitectureTest test
+        run: mvn -B -q -P prd -Dtest=LayeredArchitectureTest test
 
       - name: Run full test suite
         working-directory: kafka-dataflow
-        run: mvn -B -q test
+        run: mvn -B -q -P prd test
 
