@@ -74,10 +74,15 @@ main:
             type: OAuth2
         result: active_jobs_response
 
+    - extract_jobs:
+        assign:
+          - active_jobs: ${map.get(active_jobs_response.body, "jobs")}
+          - jobs_list: ${if(active_jobs == null, [], active_jobs)}
+
     - iterate_jobs:
         for:
           value: job
-          in: ${default(active_jobs_response.body.jobs, [])}
+          in: ${jobs_list}
           steps:
             - evaluate_job:
                 switch:
