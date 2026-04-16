@@ -6,6 +6,9 @@ on:
     branches:
       - "**"
 
+permissions:
+  contents: read
+
 jobs:
   validate:
     name: Build and Test
