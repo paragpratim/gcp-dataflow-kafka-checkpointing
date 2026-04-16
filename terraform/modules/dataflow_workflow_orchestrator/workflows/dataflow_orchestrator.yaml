@@ -9,6 +9,7 @@ main:
           - project_id: ${map.get(args_map, "project_id")}
           - region: ${map.get(args_map, "region")}
           - job_name: ${text.to_lower(map.get(args_map, "job_name"))}
+          - zone: ${default(map.get(args_map, "zone"), "")}
           - is_streaming: ${default(map.get(args_map, "is_streaming"), true)}
           - container_spec_gcs_path: ${map.get(args_map, "container_spec_gcs_path")}
           - launch_parameters: ${default(map.get(args_map, "parameters"), json.decode("{}"))}
@@ -104,6 +105,8 @@ main:
         switch:
           - condition: ${job_is_active}
             next: already_running
+          - condition: ${zone != null and zone != ""}
+            next: launch_job_with_zone
         next: launch_job
 
     - already_running:
@@ -137,11 +140,35 @@ main:
                 enableStreamingEngine: ${enable_streaming_engine}
         result: launch_response
 
+    - launch_job_with_zone:
+        call: http.post
+        args:
+          url: ${"https://dataflow.googleapis.com/v1b3/projects/" + project_id + "/locations/" + region + "/flexTemplates:launch"}
+          auth:
+            type: OAuth2
+          body:
+            launchParameter:
+              jobName: ${job_name}
+              containerSpecGcsPath: ${container_spec_gcs_path}
+              parameters: ${launch_parameters}
+              environment:
+                subnetwork: ${subnetwork}
+                serviceAccountEmail: ${service_account_email}
+                tempLocation: ${temp_location}
+                stagingLocation: ${staging_location}
+                numWorkers: ${num_workers}
+                maxWorkers: ${max_workers}
+                ipConfiguration: ${ip_configuration}
+                enableStreamingEngine: ${enable_streaming_engine}
+                zone: ${zone}
+        result: launch_response
+
     - launched:
         return:
           status: "launched"
           action: ${action}
           job_name: ${job_name}
+          zone: ${zone}
           is_streaming: ${is_streaming}
           response: ${launch_response.body}
 

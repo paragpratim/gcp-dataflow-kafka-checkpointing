@@ -44,6 +44,11 @@ on:
         required: true
         default: "2"
         type: string
+      zone:
+        description: "Optional zone for Dataflow workers"
+        required: false
+        default: ""
+        type: string
       parameters_json:
         description: "JSON object for launchParameter.parameters"
         required: true
@@ -107,6 +112,7 @@ jobs:
           INPUT_IS_STREAMING: ${{ inputs.is_streaming }}
           INPUT_NUM_WORKERS: ${{ inputs.num_workers }}
           INPUT_MAX_WORKERS: ${{ inputs.max_workers }}
+          INPUT_ZONE: ${{ inputs.zone }}
           INPUT_PARAMETERS_JSON: ${{ inputs.parameters_json }}
           TF_PROJECT_ID: ${{ steps.tf.outputs.project_id }}
           TF_REGION: ${{ steps.tf.outputs.region }}
@@ -138,11 +144,12 @@ jobs:
             --arg temp_location "gs://$TF_STAGING_BUCKET/temp" \
             --arg staging_location "gs://$TF_STAGING_BUCKET/staging" \
             --arg ip_configuration "WORKER_IP_PRIVATE" \
+            --arg zone "$INPUT_ZONE" \
             --argjson is_streaming "$INPUT_IS_STREAMING" \
             --argjson num_workers "$INPUT_NUM_WORKERS" \
             --argjson max_workers "$INPUT_MAX_WORKERS" \
             --argjson parameters "$INPUT_PARAMETERS_JSON" \
-            '{
+            '({
               action: $action,
               stop_mode: $stop_mode,
               project_id: $project_id,
@@ -159,7 +166,7 @@ jobs:
               ip_configuration: $ip_configuration,
               enable_streaming_engine: true,
               is_streaming: $is_streaming
-            }')
+            } + if $zone == "" then {} else {zone: $zone} end)')
 
           echo "workflow_name=$WORKFLOW_NAME" >> "$GITHUB_OUTPUT"
           echo "payload=$PAYLOAD" >> "$GITHUB_OUTPUT"
@@ -198,6 +205,7 @@ jobs:
             echo "- Action: ${{ inputs.action }}"
             echo "- Stop mode: ${{ inputs.stop_mode }}"
             echo "- Job name: ${{ inputs.job_name }}"
+            echo "- Zone: ${{ inputs.zone || 'auto' }}"
             echo ""
             echo "### Workflow Result"
             echo '```json'
