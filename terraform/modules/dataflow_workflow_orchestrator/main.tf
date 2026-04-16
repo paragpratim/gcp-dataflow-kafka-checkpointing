@@ -11,9 +11,14 @@ resource "google_service_account" "workflow_service_account" {
   description  = "Service account used by Cloud Workflow to check and launch Dataflow jobs"
 }
 
-resource "google_project_iam_member" "workflow_dataflow_developer" {
+resource "google_project_iam_member" "workflow_service_account_roles" {
+  for_each = toset([
+    "roles/dataflow.developer",
+    "roles/storage.objectUser",
+  ])
+
   project = var.project_id
-  role    = "roles/dataflow.developer"
+  role    = each.value
   member  = "serviceAccount:${google_service_account.workflow_service_account.email}"
 }
 
@@ -27,6 +32,6 @@ resource "google_workflows_workflow" "dataflow_orchestrator" {
 
   depends_on = [
     google_project_service.workflows_api,
-    google_project_iam_member.workflow_dataflow_developer,
+    google_project_iam_member.workflow_service_account_roles,
   ]
 }
