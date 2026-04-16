@@ -60,6 +60,22 @@ jobs:
         with:
           terraform_version: 1.6.0
 
+      - name: Cleanup legacy Terraform state
+        working-directory: terraform
+        run: |
+          set -euo pipefail
+
+          LEGACY_PREFIX='module.dataflow_flex_streaming[0].'
+          LEGACY_STATE_ENTRIES=$(terraform state list | grep "^${LEGACY_PREFIX}" || true)
+
+          if [[ -n "$LEGACY_STATE_ENTRIES" ]]; then
+            echo "Found legacy state entries from removed dataflow_flex_streaming module. Removing..."
+            # shellcheck disable=SC2086
+            terraform state rm $LEGACY_STATE_ENTRIES
+          else
+            echo "No legacy dataflow_flex_streaming state entries found."
+          fi
+
       - name: Terraform Plan
         id: plan
         working-directory: terraform
