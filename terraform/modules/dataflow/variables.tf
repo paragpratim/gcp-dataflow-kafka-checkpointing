@@ -60,6 +60,12 @@ variable "artifact_registry_format" {
   default     = "DOCKER"
 }
 
+variable "flex_template_image" {
+  description = "Optional Docker image for Dataflow Flex Template spec. If empty, a default image path is derived from region/project/repository."
+  type        = string
+  default     = ""
+}
+
 variable "create_nat" {
   description = "Whether to create a Cloud NAT for the subnet to provide outbound internet access without external IPs"
   type        = bool

@@ -64,18 +64,23 @@ output "artifact_registry_repository_name" {
   value       = module.dataflow.artifact_registry_repository_name
 }
 
-# Output from dataflow_flex_streaming module
 output "flex_template_spec_gcs_path" {
-  description = "GCS path to the Flex Template spec JSON."
-  value       = module.dataflow_flex_streaming[0].flex_template_spec_gcs_path
+  description = "GCS path to the generated Dataflow Flex Template spec JSON."
+  value       = module.dataflow.flex_template_spec_gcs_path
 }
 
-output "dataflow_job_id" {
-  description = "ID of the Dataflow Flex Template job."
-  value       = module.dataflow_flex_streaming[0].dataflow_job_id
+# Outputs from dataflow_workflow_orchestrator module
+output "workflow_name" {
+  description = "Created workflow name."
+  value       = var.create_dataflow_workflow_orchestrator ? module.dataflow_workflow_orchestrator[0].workflow_name : null
 }
 
-output "dataflow_job_state" {
-  description = "Current state of the Dataflow Flex Template job."
-  value       = module.dataflow_flex_streaming[0].dataflow_job_state
+output "workflow_id" {
+  description = "Created workflow ID."
+  value       = var.create_dataflow_workflow_orchestrator ? module.dataflow_workflow_orchestrator[0].workflow_id : null
+}
+
+output "workflow_service_account_email" {
+  description = "Service account used by the workflow."
+  value       = var.create_dataflow_workflow_orchestrator ? module.dataflow_workflow_orchestrator[0].workflow_service_account_email : null
 }

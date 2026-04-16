@@ -52,6 +52,32 @@ resource "google_storage_bucket" "dataflow_staging" {
   depends_on = [google_project_service.required_apis]
 }
 
+locals {
+  flex_template_image = var.flex_template_image != "" ? var.flex_template_image : "${var.region}-docker.pkg.dev/${var.project_id}/${var.artifact_registry_repository_id}/kafka-dataflow:latest"
+}
+
+# Dataflow Flex Template Specification File
+resource "local_file" "flex_template_spec" {
+  content = jsonencode({
+    image    = local.flex_template_image
+    sdk_info = { language = "JAVA" }
+    # Add other options if needed
+  })
+  filename = "${path.module}/dataflow-flex-template-spec.json"
+}
+
+resource "google_storage_bucket_object" "flex_template_spec" {
+  name         = "templates/dataflow-flex-template-spec.json"
+  bucket       = google_storage_bucket.dataflow_staging.name
+  content      = local_file.flex_template_spec.content
+  content_type = "application/json"
+
+  depends_on = [
+    local_file.flex_template_spec,
+    google_storage_bucket.dataflow_staging,
+  ]
+}
+
 # Create Artifact Registry repository for Dataflow artifacts
 resource "google_artifact_registry_repository" "dataflow_artifact_registry" {
   project       = var.project_id

@@ -42,8 +42,14 @@ variable "artifact_registry_format" {
   default     = "DOCKER"
 }
 
-variable "submit_dataflow_flex_job" {
-  description = "Whether to submit the Dataflow Flex job (module.dataflow_job)."
+variable "create_dataflow_workflow_orchestrator" {
+  description = "Whether to create the Cloud Workflow that checks and starts Dataflow jobs"
   type        = bool
-  default     = false
+  default     = true
+}
+
+variable "workflow_name" {
+  description = "Name of the Cloud Workflow resource"
+  type        = string
+  default     = "dataflow-job-orchestrator"
 }

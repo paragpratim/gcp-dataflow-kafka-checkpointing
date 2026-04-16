@@ -1,0 +1,173 @@
+main:
+  params: [args]
+  steps:
+    - init:
+        assign:
+          - args_map: ${default(args, {})}
+          - action: ${default(map.get(args_map, "action"), "start")}
+          - stop_mode: ${default(map.get(args_map, "stop_mode"), "drain")}
+          - project_id: ${map.get(args_map, "project_id")}
+          - region: ${map.get(args_map, "region")}
+          - job_name: ${map.get(args_map, "job_name")}
+          - is_streaming: ${default(map.get(args_map, "is_streaming"), true)}
+          - container_spec_gcs_path: ${map.get(args_map, "container_spec_gcs_path")}
+          - launch_parameters: ${default(map.get(args_map, "parameters"), {})}
+          - subnetwork: ${map.get(args_map, "subnetwork")}
+          - service_account_email: ${map.get(args_map, "service_account_email")}
+          - temp_location: ${map.get(args_map, "temp_location")}
+          - staging_location: ${map.get(args_map, "staging_location")}
+          - num_workers: ${default(map.get(args_map, "num_workers"), 1)}
+          - max_workers: ${default(map.get(args_map, "max_workers"), 2)}
+          - ip_configuration: ${default(map.get(args_map, "ip_configuration"), "WORKER_IP_PRIVATE")}
+          - enable_streaming_engine: ${default(map.get(args_map, "enable_streaming_engine"), true)}
+          - job_is_active: false
+          - matched_job_id: ""
+          - matched_job_state: ""
+          - stop_requested_state: "JOB_STATE_DRAINED"
+
+    - maybe_set_cancel_stop_state:
+        switch:
+          - condition: ${stop_mode == "cancel"}
+            steps:
+              - set_cancel_stop_state:
+                  assign:
+                    - stop_requested_state: "JOB_STATE_CANCELLED"
+
+    - validate_required_inputs:
+        switch:
+          - condition: ${project_id == null || project_id == ""}
+            raise: "Missing required input: project_id"
+          - condition: ${region == null || region == ""}
+            raise: "Missing required input: region"
+          - condition: ${job_name == null || job_name == ""}
+            raise: "Missing required input: job_name"
+
+    - validate_action_inputs:
+        switch:
+          - condition: ${action != "start" && action != "stop"}
+            raise: "Invalid input: action must be one of [start, stop]"
+          - condition: ${action == "stop" && stop_mode != "drain" && stop_mode != "cancel"}
+            raise: "Invalid input: stop_mode must be one of [drain, cancel]"
+
+    - validate_start_inputs:
+        switch:
+          - condition: ${action != "start"}
+            next: list_jobs
+          - condition: ${container_spec_gcs_path == null || container_spec_gcs_path == ""}
+            raise: "Missing required input for action=start: container_spec_gcs_path"
+          - condition: ${subnetwork == null || subnetwork == ""}
+            raise: "Missing required input for action=start: subnetwork"
+          - condition: ${service_account_email == null || service_account_email == ""}
+            raise: "Missing required input for action=start: service_account_email"
+          - condition: ${temp_location == null || temp_location == ""}
+            raise: "Missing required input for action=start: temp_location"
+          - condition: ${staging_location == null || staging_location == ""}
+            raise: "Missing required input for action=start: staging_location"
+
+    - list_jobs:
+        call: http.get
+        args:
+          url: ${"https://dataflow.googleapis.com/v1b3/projects/" + project_id + "/locations/" + region + "/jobs"}
+          query:
+            filter: "ACTIVE"
+          auth:
+            type: OAuth2
+        result: active_jobs_response
+
+    - iterate_jobs:
+        for:
+          value: job
+          in: ${default(active_jobs_response.body.jobs, [])}
+          steps:
+            - evaluate_job:
+                switch:
+                  - condition: ${matched_job_id == "" && job.name == job_name && (job.currentState == "JOB_STATE_RUNNING" || job.currentState == "JOB_STATE_DRAINING" || job.currentState == "JOB_STATE_PENDING" || job.currentState == "JOB_STATE_QUEUED")}
+                    steps:
+                      - mark_running:
+                          assign:
+                            - job_is_active: true
+                            - matched_job_id: ${job.id}
+                            - matched_job_state: ${job.currentState}
+
+    - route_by_action:
+        switch:
+          - condition: ${action == "stop"}
+            next: maybe_stop
+        next: maybe_launch
+
+    - maybe_launch:
+        switch:
+          - condition: ${job_is_active}
+            next: already_running
+        next: launch_job
+
+    - already_running:
+        return:
+          status: "already_running"
+          action: ${action}
+          job_name: ${job_name}
+          job_id: ${matched_job_id}
+          job_state: ${matched_job_state}
+          is_streaming: ${is_streaming}
+
+    - launch_job:
+        call: http.post
+        args:
+          url: ${"https://dataflow.googleapis.com/v1b3/projects/" + project_id + "/locations/" + region + "/flexTemplates:launch"}
+          auth:
+            type: OAuth2
+          body:
+            launchParameter:
+              jobName: ${job_name}
+              containerSpecGcsPath: ${container_spec_gcs_path}
+              parameters: ${launch_parameters}
+              environment:
+                subnetwork: ${subnetwork}
+                serviceAccountEmail: ${service_account_email}
+                tempLocation: ${temp_location}
+                stagingLocation: ${staging_location}
+                numWorkers: ${num_workers}
+                maxWorkers: ${max_workers}
+                ipConfiguration: ${ip_configuration}
+                enableStreamingEngine: ${enable_streaming_engine}
+        result: launch_response
+
+    - launched:
+        return:
+          status: "launched"
+          action: ${action}
+          job_name: ${job_name}
+          is_streaming: ${is_streaming}
+          response: ${launch_response.body}
+
+    - maybe_stop:
+        switch:
+          - condition: ${job_is_active}
+            next: stop_job
+        next: already_stopped
+
+    - already_stopped:
+        return:
+          status: "already_stopped"
+          action: ${action}
+          job_name: ${job_name}
+
+    - stop_job:
+        call: http.put
+        args:
+          url: ${"https://dataflow.googleapis.com/v1b3/projects/" + project_id + "/locations/" + region + "/jobs/" + matched_job_id}
+          auth:
+            type: OAuth2
+          body:
+            requestedState: ${stop_requested_state}
+        result: stop_response
+
+    - stop_requested:
+        return:
+          status: "stop_requested"
+          action: ${action}
+          stop_mode: ${stop_mode}
+          requested_state: ${stop_requested_state}
+          job_name: ${job_name}
+          job_id: ${matched_job_id}
+          response: ${stop_response.body}

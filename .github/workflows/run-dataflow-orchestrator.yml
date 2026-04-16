@@ -1,0 +1,206 @@
+name: Run Dataflow Orchestrator
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Orchestrator action"
+        required: true
+        default: "start"
+        type: choice
+        options:
+          - start
+          - stop
+      stop_mode:
+        description: "Used only when action=stop"
+        required: true
+        default: "drain"
+        type: choice
+        options:
+          - drain
+          - cancel
+      job_name:
+        description: "Dataflow job name"
+        required: true
+        default: "KafkaToBqPipeline"
+        type: string
+      workflow_name:
+        description: "Optional override for Cloud Workflow name"
+        required: false
+        default: ""
+        type: string
+      is_streaming:
+        description: "Whether target job is streaming"
+        required: true
+        default: true
+        type: boolean
+      num_workers:
+        description: "Initial workers (start only)"
+        required: true
+        default: "1"
+        type: string
+      max_workers:
+        description: "Max workers (start only)"
+        required: true
+        default: "2"
+        type: string
+      parameters_json:
+        description: "JSON object for launchParameter.parameters"
+        required: true
+        default: '{"pipelineName":"KafkaToBqPipeline"}'
+        type: string
+
+env:
+  PROJECT_ID: ${{ secrets.DATAFLOW_TEST_PROJECT_ID }}
+
+jobs:
+  run-orchestrator:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/${{ secrets.DEPLOYMENT_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/${{ secrets.WIF_POOL_NAME }}/providers/${{ secrets.WIF_PROVIDER_NAME }}
+          service_account: ${{ secrets.DEPLOYMENT_SVC }}
+          audience: ${{ secrets.WIF_AUDIENCE }}
+          project_id: ${{ env.PROJECT_ID }}
+          create_credentials_file: true
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.0
+
+      - name: Resolve infrastructure outputs
+        id: tf
+        working-directory: terraform
+        run: |
+          set -euo pipefail
+          terraform init -input=false -no-color
+
+          echo "project_id=$(terraform output -raw project_id)" >> "$GITHUB_OUTPUT"
+          echo "region=$(terraform output -raw region)" >> "$GITHUB_OUTPUT"
+          echo "workflow_name=$(terraform output -raw workflow_name)" >> "$GITHUB_OUTPUT"
+          echo "spec_path=$(terraform output -raw flex_template_spec_gcs_path)" >> "$GITHUB_OUTPUT"
+          echo "subnet_self_link=$(terraform output -raw subnet_self_link)" >> "$GITHUB_OUTPUT"
+          echo "service_account_email=$(terraform output -raw service_account_email)" >> "$GITHUB_OUTPUT"
+          echo "dataflow_staging_bucket=$(terraform output -raw dataflow_staging_bucket)" >> "$GITHUB_OUTPUT"
+
+      - name: Build orchestrator payload
+        id: payload
+        env:
+          INPUT_ACTION: ${{ inputs.action }}
+          INPUT_STOP_MODE: ${{ inputs.stop_mode }}
+          INPUT_JOB_NAME: ${{ inputs.job_name }}
+          INPUT_WORKFLOW_NAME: ${{ inputs.workflow_name }}
+          INPUT_IS_STREAMING: ${{ inputs.is_streaming }}
+          INPUT_NUM_WORKERS: ${{ inputs.num_workers }}
+          INPUT_MAX_WORKERS: ${{ inputs.max_workers }}
+          INPUT_PARAMETERS_JSON: ${{ inputs.parameters_json }}
+          TF_PROJECT_ID: ${{ steps.tf.outputs.project_id }}
+          TF_REGION: ${{ steps.tf.outputs.region }}
+          TF_WORKFLOW_NAME: ${{ steps.tf.outputs.workflow_name }}
+          TF_SPEC_PATH: ${{ steps.tf.outputs.spec_path }}
+          TF_SUBNET: ${{ steps.tf.outputs.subnet_self_link }}
+          TF_SA: ${{ steps.tf.outputs.service_account_email }}
+          TF_STAGING_BUCKET: ${{ steps.tf.outputs.dataflow_staging_bucket }}
+        run: |
+          set -euo pipefail
+
+          # Validate custom parameters JSON for a predictable workflow input.
+          echo "$INPUT_PARAMETERS_JSON" | jq -e . >/dev/null
+
+          WORKFLOW_NAME="$INPUT_WORKFLOW_NAME"
+          if [[ -z "$WORKFLOW_NAME" ]]; then
+            WORKFLOW_NAME="$TF_WORKFLOW_NAME"
+          fi
+
+          PAYLOAD=$(jq -cn \
+            --arg action "$INPUT_ACTION" \
+            --arg stop_mode "$INPUT_STOP_MODE" \
+            --arg project_id "$TF_PROJECT_ID" \
+            --arg region "$TF_REGION" \
+            --arg job_name "$INPUT_JOB_NAME" \
+            --arg container_spec_gcs_path "$TF_SPEC_PATH" \
+            --arg subnetwork "$TF_SUBNET" \
+            --arg service_account_email "$TF_SA" \
+            --arg temp_location "gs://$TF_STAGING_BUCKET/temp" \
+            --arg staging_location "gs://$TF_STAGING_BUCKET/staging" \
+            --arg ip_configuration "WORKER_IP_PRIVATE" \
+            --argjson is_streaming "$INPUT_IS_STREAMING" \
+            --argjson num_workers "$INPUT_NUM_WORKERS" \
+            --argjson max_workers "$INPUT_MAX_WORKERS" \
+            --argjson parameters "$INPUT_PARAMETERS_JSON" \
+            '{
+              action: $action,
+              stop_mode: $stop_mode,
+              project_id: $project_id,
+              region: $region,
+              job_name: $job_name,
+              container_spec_gcs_path: $container_spec_gcs_path,
+              parameters: $parameters,
+              subnetwork: $subnetwork,
+              service_account_email: $service_account_email,
+              temp_location: $temp_location,
+              staging_location: $staging_location,
+              num_workers: $num_workers,
+              max_workers: $max_workers,
+              ip_configuration: $ip_configuration,
+              enable_streaming_engine: true,
+              is_streaming: $is_streaming
+            }')
+
+          echo "workflow_name=$WORKFLOW_NAME" >> "$GITHUB_OUTPUT"
+          echo "payload=$PAYLOAD" >> "$GITHUB_OUTPUT"
+
+      - name: Execute orchestrator workflow
+        id: execute
+        env:
+          WORKFLOW_NAME: ${{ steps.payload.outputs.workflow_name }}
+          REGION: ${{ steps.tf.outputs.region }}
+          PAYLOAD: ${{ steps.payload.outputs.payload }}
+        run: |
+          set -euo pipefail
+
+          EXECUTION_NAME=$(gcloud workflows execute "$WORKFLOW_NAME" \
+            --location="$REGION" \
+            --data="$PAYLOAD" \
+            --format='value(name)')
+
+          echo "execution_name=$EXECUTION_NAME" >> "$GITHUB_OUTPUT"
+
+      - name: Fetch execution result
+        env:
+          EXECUTION_NAME: ${{ steps.execute.outputs.execution_name }}
+        run: |
+          set -euo pipefail
+
+          gcloud workflows executions describe "$EXECUTION_NAME" --format=json | tee execution.json
+          RESULT=$(jq -r '.result // "(no result)"' execution.json)
+          STATE=$(jq -r '.state // "UNKNOWN"' execution.json)
+
+          {
+            echo "## Dataflow Orchestrator Execution"
+            echo "- Workflow: ${{ steps.payload.outputs.workflow_name }}"
+            echo "- Execution: $EXECUTION_NAME"
+            echo "- State: $STATE"
+            echo "- Action: ${{ inputs.action }}"
+            echo "- Stop mode: ${{ inputs.stop_mode }}"
+            echo "- Job name: ${{ inputs.job_name }}"
+            echo ""
+            echo "### Workflow Result"
+            echo '```json'
+            echo "$RESULT"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -72,6 +72,11 @@ output "artifact_registry_repository_name" {
   value       = google_artifact_registry_repository.dataflow_artifact_registry.name
 }
 
+output "flex_template_spec_gcs_path" {
+  description = "GCS path to the generated Dataflow Flex Template spec JSON."
+  value       = "gs://${google_storage_bucket_object.flex_template_spec.bucket}/${google_storage_bucket_object.flex_template_spec.name}"
+}
+
 output "firestore_database_name" {
   description = "The name of the created Firestore database for Kafka checkpointing."
   value       = google_firestore_database.dataflow_kafka_checkpointing_firestore.name
