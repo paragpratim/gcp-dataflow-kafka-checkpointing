@@ -65,16 +65,16 @@ jobs:
         run: |
           set -euo pipefail
 
-          LEGACY_PREFIX='module.dataflow_flex_streaming[0].'
-          LEGACY_STATE_ENTRIES=$(terraform state list | grep "^${LEGACY_PREFIX}" || true)
+          echo "Removing legacy state entries from removed dataflow_flex_streaming module (if present)..."
 
-          if [[ -n "$LEGACY_STATE_ENTRIES" ]]; then
-            echo "Found legacy state entries from removed dataflow_flex_streaming module. Removing..."
-            # shellcheck disable=SC2086
-            terraform state rm $LEGACY_STATE_ENTRIES
-          else
-            echo "No legacy dataflow_flex_streaming state entries found."
-          fi
+          terraform state rm 'module.dataflow_flex_streaming[0].local_file.flex_template_spec' || true
+          terraform state rm 'module.dataflow_flex_streaming[0].google_storage_bucket_object.flex_template_spec' || true
+          terraform state rm 'module.dataflow_flex_streaming[0].google_dataflow_flex_template_job.dataflow_flex_job' || true
+
+          # Cleanup any no-index variant if it exists in older states.
+          terraform state rm 'module.dataflow_flex_streaming.local_file.flex_template_spec' || true
+          terraform state rm 'module.dataflow_flex_streaming.google_storage_bucket_object.flex_template_spec' || true
+          terraform state rm 'module.dataflow_flex_streaming.google_dataflow_flex_template_job.dataflow_flex_job' || true
 
       - name: Terraform Plan
         id: plan
