@@ -66,18 +66,16 @@ main:
             raise: "Missing required input for action=start: staging_location"
 
     - list_jobs:
-        call: http.get
+        call: googleapis.dataflow.v1b3.projects.locations.jobs.list
         args:
-          url: ${"https://dataflow.googleapis.com/v1b3/projects/" + project_id + "/locations/" + region + "/jobs"}
-          query:
-            filter: "ACTIVE"
-          auth:
-            type: OAuth2
+          projectId: ${project_id}
+          location: ${region}
+          filter: "ACTIVE"
         result: active_jobs_response
 
     - extract_jobs:
         assign:
-          - active_jobs: ${map.get(active_jobs_response.body, "jobs")}
+          - active_jobs: ${map.get(active_jobs_response, "jobs")}
           - jobs_list: ${if(active_jobs == null, [], active_jobs)}
 
     - iterate_jobs:
@@ -119,11 +117,10 @@ main:
           is_streaming: ${is_streaming}
 
     - launch_job:
-        call: http.post
+        call: googleapis.dataflow.v1b3.projects.locations.flexTemplates.launch
         args:
-          url: ${"https://dataflow.googleapis.com/v1b3/projects/" + project_id + "/locations/" + region + "/flexTemplates:launch"}
-          auth:
-            type: OAuth2
+          projectId: ${project_id}
+          location: ${region}
           body:
             launchParameter:
               jobName: ${job_name}
@@ -141,11 +138,10 @@ main:
         result: launch_response
 
     - launch_job_with_zone:
-        call: http.post
+        call: googleapis.dataflow.v1b3.projects.locations.flexTemplates.launch
         args:
-          url: ${"https://dataflow.googleapis.com/v1b3/projects/" + project_id + "/locations/" + region + "/flexTemplates:launch"}
-          auth:
-            type: OAuth2
+          projectId: ${project_id}
+          location: ${region}
           body:
             launchParameter:
               jobName: ${job_name}
@@ -170,7 +166,7 @@ main:
           job_name: ${job_name}
           zone: ${zone}
           is_streaming: ${is_streaming}
-          response: ${launch_response.body}
+          response: ${launch_response}
 
     - maybe_stop:
         switch:
@@ -185,11 +181,11 @@ main:
           job_name: ${job_name}
 
     - stop_job:
-        call: http.put
+        call: googleapis.dataflow.v1b3.projects.locations.jobs.update
         args:
-          url: ${"https://dataflow.googleapis.com/v1b3/projects/" + project_id + "/locations/" + region + "/jobs/" + matched_job_id}
-          auth:
-            type: OAuth2
+          projectId: ${project_id}
+          location: ${region}
+          jobId: ${matched_job_id}
           body:
             requestedState: ${stop_requested_state}
         result: stop_response
@@ -202,4 +198,4 @@ main:
           requested_state: ${stop_requested_state}
           job_name: ${job_name}
           job_id: ${matched_job_id}
-          response: ${stop_response.body}
+          response: ${stop_response}
