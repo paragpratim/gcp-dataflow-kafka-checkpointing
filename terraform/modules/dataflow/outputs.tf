@@ -72,11 +72,6 @@ output "artifact_registry_repository_name" {
   value       = google_artifact_registry_repository.dataflow_artifact_registry.name
 }
 
-output "flex_template_spec_gcs_path" {
-  description = "GCS path to the generated Dataflow Flex Template spec JSON."
-  value       = "gs://${google_storage_bucket_object.flex_template_spec.bucket}/${google_storage_bucket_object.flex_template_spec.name}"
-}
-
 output "flex_template_image" {
   description = "Resolved container image used for Dataflow Flex Template launches."
   value       = local.flex_template_image

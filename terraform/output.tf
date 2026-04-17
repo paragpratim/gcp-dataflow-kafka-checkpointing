@@ -64,11 +64,6 @@ output "artifact_registry_repository_name" {
   value       = module.dataflow.artifact_registry_repository_name
 }
 
-output "flex_template_spec_gcs_path" {
-  description = "GCS path to the generated Dataflow Flex Template spec JSON."
-  value       = module.dataflow.flex_template_spec_gcs_path
-}
-
 output "flex_template_image" {
   description = "Resolved container image used for Dataflow Flex Template launches."
   value       = module.dataflow.flex_template_image
