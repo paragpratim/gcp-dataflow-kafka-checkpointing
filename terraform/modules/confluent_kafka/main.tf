@@ -176,3 +176,47 @@ resource "confluent_kafka_acl" "dataflow_read_on_topic" {
     secret = confluent_api_key.deployment_kafka.secret
   }
 }
+
+resource "confluent_kafka_acl" "dataflow_read_on_group" {
+  count = var.cluster_type == "basic" ? 1 : 0
+
+  kafka_cluster {
+    id = confluent_kafka_cluster.this.id
+  }
+
+  resource_type = "GROUP"
+  resource_name = var.consumer_group_name
+  pattern_type  = "LITERAL"
+  principal     = "User:${confluent_service_account.dataflow.id}"
+  host          = "*"
+  operation     = "READ"
+  permission    = "ALLOW"
+  rest_endpoint = confluent_kafka_cluster.this.rest_endpoint
+
+  credentials {
+    key    = confluent_api_key.deployment_kafka.id
+    secret = confluent_api_key.deployment_kafka.secret
+  }
+}
+
+resource "confluent_kafka_acl" "dataflow_describe_on_group" {
+  count = var.cluster_type == "basic" ? 1 : 0
+
+  kafka_cluster {
+    id = confluent_kafka_cluster.this.id
+  }
+
+  resource_type = "GROUP"
+  resource_name = var.consumer_group_name
+  pattern_type  = "LITERAL"
+  principal     = "User:${confluent_service_account.dataflow.id}"
+  host          = "*"
+  operation     = "DESCRIBE"
+  permission    = "ALLOW"
+  rest_endpoint = confluent_kafka_cluster.this.rest_endpoint
+
+  credentials {
+    key    = confluent_api_key.deployment_kafka.id
+    secret = confluent_api_key.deployment_kafka.secret
+  }
+}

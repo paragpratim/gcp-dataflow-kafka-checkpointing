@@ -74,3 +74,9 @@ variable "github_owner" {
   description = "GitHub owner (org or user) for the target repository"
   type        = string
 }
+
+variable "consumer_group_name" {
+  description = "Kafka consumer group name used by Dataflow consumers"
+  type        = string
+  default     = "gcp-dataflow-group-prd"
+}
