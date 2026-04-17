@@ -130,9 +130,13 @@ main:
         switch:
           - condition: ${zone != null and zone != ""}
             steps:
+              - build_zone_map:
+                  assign:
+                    - zone_map:
+                        zone: ${zone}
               - add_zone_to_env:
                   assign:
-                    - launch_env: ${map.set(launch_env, "zone", zone)}
+                    - launch_env: ${map.merge(launch_env, zone_map)}
 
     - launch_job:
         try:
