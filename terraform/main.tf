@@ -29,9 +29,6 @@ module "confluent_kafka" {
 
   source = "./modules/confluent_kafka"
 
-  confluent_cloud_api_key    = var.confluent_cloud_api_key
-  confluent_cloud_api_secret = var.confluent_cloud_api_secret
-
   environment_display_name = var.confluent_environment_display_name
   cluster_display_name     = var.confluent_cluster_display_name
   cluster_availability     = var.confluent_cluster_availability

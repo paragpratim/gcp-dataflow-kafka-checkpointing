@@ -28,6 +28,4 @@ provider "google-beta" {
 }
 
 provider "confluent" {
-  cloud_api_key    = var.enable_confluent_cloud ? var.confluent_cloud_api_key : null
-  cloud_api_secret = var.enable_confluent_cloud ? var.confluent_cloud_api_secret : null
 }

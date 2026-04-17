@@ -1,15 +1,3 @@
-variable "confluent_cloud_api_key" {
-  description = "Confluent Cloud API key (resource owner level)"
-  type        = string
-  sensitive   = true
-}
-
-variable "confluent_cloud_api_secret" {
-  description = "Confluent Cloud API secret (resource owner level)"
-  type        = string
-  sensitive   = true
-}
-
 variable "environment_display_name" {
   description = "Display name for the Confluent environment"
   type        = string
