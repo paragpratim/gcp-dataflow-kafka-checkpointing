@@ -97,7 +97,7 @@ jobs:
           echo "project_id=$(terraform output -raw project_id)" >> "$GITHUB_OUTPUT"
           echo "region=$(terraform output -raw region)" >> "$GITHUB_OUTPUT"
           echo "workflow_name=$(terraform output -raw workflow_name)" >> "$GITHUB_OUTPUT"
-          echo "spec_path=$(terraform output -raw flex_template_spec_gcs_path)" >> "$GITHUB_OUTPUT"
+          echo "container_image=$(terraform output -raw flex_template_image)" >> "$GITHUB_OUTPUT"
           echo "subnet_self_link=$(terraform output -raw subnet_self_link)" >> "$GITHUB_OUTPUT"
           echo "service_account_email=$(terraform output -raw service_account_email)" >> "$GITHUB_OUTPUT"
           echo "dataflow_staging_bucket=$(terraform output -raw dataflow_staging_bucket)" >> "$GITHUB_OUTPUT"
@@ -117,7 +117,7 @@ jobs:
           TF_PROJECT_ID: ${{ steps.tf.outputs.project_id }}
           TF_REGION: ${{ steps.tf.outputs.region }}
           TF_WORKFLOW_NAME: ${{ steps.tf.outputs.workflow_name }}
-          TF_SPEC_PATH: ${{ steps.tf.outputs.spec_path }}
+          TF_CONTAINER_IMAGE: ${{ steps.tf.outputs.container_image }}
           TF_SUBNET: ${{ steps.tf.outputs.subnet_self_link }}
           TF_SA: ${{ steps.tf.outputs.service_account_email }}
           TF_STAGING_BUCKET: ${{ steps.tf.outputs.dataflow_staging_bucket }}
@@ -138,7 +138,7 @@ jobs:
             --arg project_id "$TF_PROJECT_ID" \
             --arg region "$TF_REGION" \
             --arg job_name "$INPUT_JOB_NAME" \
-            --arg container_spec_gcs_path "$TF_SPEC_PATH" \
+            --arg container_image "$TF_CONTAINER_IMAGE" \
             --arg subnetwork "$TF_SUBNET" \
             --arg service_account_email "$TF_SA" \
             --arg temp_location "gs://$TF_STAGING_BUCKET/temp" \
@@ -155,7 +155,7 @@ jobs:
               project_id: $project_id,
               region: $region,
               job_name: $job_name,
-              container_spec_gcs_path: $container_spec_gcs_path,
+              container_image: $container_image,
               parameters: $parameters,
               subnetwork: $subnetwork,
               service_account_email: $service_account_email,

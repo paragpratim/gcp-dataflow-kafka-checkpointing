@@ -11,7 +11,7 @@ main:
           - job_name: ${text.to_lower(map.get(args_map, "job_name"))}
           - zone: ${default(map.get(args_map, "zone"), "")}
           - is_streaming: ${default(map.get(args_map, "is_streaming"), true)}
-          - container_spec_gcs_path: ${map.get(args_map, "container_spec_gcs_path")}
+          - container_image: ${map.get(args_map, "container_image")}
           - launch_parameters: ${default(map.get(args_map, "parameters"), json.decode("{}"))}
           - subnetwork: ${map.get(args_map, "subnetwork")}
           - service_account_email: ${map.get(args_map, "service_account_email")}
@@ -54,8 +54,8 @@ main:
         switch:
           - condition: ${action != "start"}
             next: list_jobs
-          - condition: ${container_spec_gcs_path == null or container_spec_gcs_path == ""}
-            raise: "Missing required input for action=start: container_spec_gcs_path"
+          - condition: ${container_image == null or container_image == ""}
+            raise: "Missing required input for action=start: container_image"
           - condition: ${subnetwork == null or subnetwork == ""}
             raise: "Missing required input for action=start: subnetwork"
           - condition: ${service_account_email == null or service_account_email == ""}
@@ -124,7 +124,10 @@ main:
           body:
             launchParameter:
               jobName: ${job_name}
-              containerSpecGcsPath: ${container_spec_gcs_path}
+              containerSpec:
+                image: ${container_image}
+                sdkInfo:
+                  language: "JAVA"
               parameters: ${launch_parameters}
               environment:
                 subnetwork: ${subnetwork}
@@ -145,7 +148,10 @@ main:
           body:
             launchParameter:
               jobName: ${job_name}
-              containerSpecGcsPath: ${container_spec_gcs_path}
+              containerSpec:
+                image: ${container_image}
+                sdkInfo:
+                  language: "JAVA"
               parameters: ${launch_parameters}
               environment:
                 subnetwork: ${subnetwork}

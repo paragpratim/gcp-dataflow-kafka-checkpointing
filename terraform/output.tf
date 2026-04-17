@@ -69,6 +69,11 @@ output "flex_template_spec_gcs_path" {
   value       = module.dataflow.flex_template_spec_gcs_path
 }
 
+output "flex_template_image" {
+  description = "Resolved container image used for Dataflow Flex Template launches."
+  value       = module.dataflow.flex_template_image
+}
+
 # Outputs from dataflow_workflow_orchestrator module
 output "workflow_name" {
   description = "Created workflow name."

@@ -77,6 +77,11 @@ output "flex_template_spec_gcs_path" {
   value       = "gs://${google_storage_bucket_object.flex_template_spec.bucket}/${google_storage_bucket_object.flex_template_spec.name}"
 }
 
+output "flex_template_image" {
+  description = "Resolved container image used for Dataflow Flex Template launches."
+  value       = local.flex_template_image
+}
+
 output "firestore_database_name" {
   description = "The name of the created Firestore database for Kafka checkpointing."
   value       = google_firestore_database.dataflow_kafka_checkpointing_firestore.name
