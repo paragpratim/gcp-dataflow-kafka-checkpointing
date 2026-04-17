@@ -117,53 +117,84 @@ main:
           is_streaming: ${is_streaming}
 
     - launch_job:
-        call: googleapis.dataflow.v1b3.projects.locations.flexTemplates.launch
-        args:
-          projectId: ${project_id}
-          location: ${region}
-          body:
-            launchParameter:
-              jobName: ${job_name}
-              containerSpec:
-                image: ${container_image}
-                sdkInfo:
-                  language: "JAVA"
-              parameters: ${launch_parameters}
-              environment:
-                subnetwork: ${subnetwork}
-                serviceAccountEmail: ${service_account_email}
-                tempLocation: ${temp_location}
-                stagingLocation: ${staging_location}
-                numWorkers: ${num_workers}
-                maxWorkers: ${max_workers}
-                ipConfiguration: ${ip_configuration}
-                enableStreamingEngine: ${enable_streaming_engine}
-        result: launch_response
+        try:
+          call: googleapis.dataflow.v1b3.projects.locations.flexTemplates.launch
+          args:
+            projectId: ${project_id}
+            location: ${region}
+            body:
+              launchParameter:
+                jobName: ${job_name}
+                containerSpec:
+                  image: ${container_image}
+                  sdkInfo:
+                    language: "JAVA"
+                parameters: ${launch_parameters}
+                environment:
+                  subnetwork: ${subnetwork}
+                  serviceAccountEmail: ${service_account_email}
+                  tempLocation: ${temp_location}
+                  stagingLocation: ${staging_location}
+                  numWorkers: ${num_workers}
+                  maxWorkers: ${max_workers}
+                  ipConfiguration: ${ip_configuration}
+                  enableStreamingEngine: ${enable_streaming_engine}
+          result: launch_response
+        except:
+          as: launch_error
+          steps:
+            - maybe_handle_launch_conflict:
+                switch:
+                  - condition: ${launch_error.code == 409}
+                    next: launch_conflict_already_running
+            - rethrow_launch_error:
+                raise: ${launch_error}
 
     - launch_job_with_zone:
-        call: googleapis.dataflow.v1b3.projects.locations.flexTemplates.launch
-        args:
-          projectId: ${project_id}
-          location: ${region}
-          body:
-            launchParameter:
-              jobName: ${job_name}
-              containerSpec:
-                image: ${container_image}
-                sdkInfo:
-                  language: "JAVA"
-              parameters: ${launch_parameters}
-              environment:
-                subnetwork: ${subnetwork}
-                serviceAccountEmail: ${service_account_email}
-                tempLocation: ${temp_location}
-                stagingLocation: ${staging_location}
-                numWorkers: ${num_workers}
-                maxWorkers: ${max_workers}
-                ipConfiguration: ${ip_configuration}
-                enableStreamingEngine: ${enable_streaming_engine}
-                zone: ${zone}
-        result: launch_response
+        try:
+          call: googleapis.dataflow.v1b3.projects.locations.flexTemplates.launch
+          args:
+            projectId: ${project_id}
+            location: ${region}
+            body:
+              launchParameter:
+                jobName: ${job_name}
+                containerSpec:
+                  image: ${container_image}
+                  sdkInfo:
+                    language: "JAVA"
+                parameters: ${launch_parameters}
+                environment:
+                  subnetwork: ${subnetwork}
+                  serviceAccountEmail: ${service_account_email}
+                  tempLocation: ${temp_location}
+                  stagingLocation: ${staging_location}
+                  numWorkers: ${num_workers}
+                  maxWorkers: ${max_workers}
+                  ipConfiguration: ${ip_configuration}
+                  enableStreamingEngine: ${enable_streaming_engine}
+                  zone: ${zone}
+          result: launch_response
+        except:
+          as: launch_error
+          steps:
+            - maybe_handle_launch_conflict_with_zone:
+                switch:
+                  - condition: ${launch_error.code == 409}
+                    next: launch_conflict_already_running
+            - rethrow_launch_error_with_zone:
+                raise: ${launch_error}
+
+    - launch_conflict_already_running:
+        return:
+          status: "already_running"
+          action: ${action}
+          job_name: ${job_name}
+          job_id: ${matched_job_id}
+          job_state: ${matched_job_state}
+          zone: ${zone}
+          is_streaming: ${is_streaming}
+          reason: "launch_conflict_409"
 
     - launched:
         return:
