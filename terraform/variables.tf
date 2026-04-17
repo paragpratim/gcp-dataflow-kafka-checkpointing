@@ -53,3 +53,64 @@ variable "workflow_name" {
   type        = string
   default     = "dataflow-job-orchestrator"
 }
+
+# ── Confluent Cloud ───────────────────────────────────────────────────────────
+
+variable "enable_confluent_cloud" {
+  description = "Whether to create Confluent Cloud resources"
+  type        = bool
+  default     = false
+}
+
+variable "confluent_cloud_api_key" {
+  description = "Confluent Cloud API key (resource owner level)"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "confluent_cloud_api_secret" {
+  description = "Confluent Cloud API secret (resource owner level)"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "confluent_environment_display_name" {
+  description = "Display name for the Confluent environment"
+  type        = string
+  default     = "dataflow-env"
+}
+
+variable "confluent_cluster_display_name" {
+  description = "Display name for the Kafka cluster"
+  type        = string
+  default     = "dataflow-kafka-cluster"
+}
+
+variable "confluent_cluster_availability" {
+  description = "Availability zone configuration: SINGLE_ZONE or MULTI_ZONE"
+  type        = string
+  default     = "SINGLE_ZONE"
+}
+
+variable "confluent_cluster_region" {
+  description = "Cloud region for the Kafka cluster"
+  type        = string
+  default     = "europe-west4"
+}
+
+variable "confluent_cluster_type" {
+  description = "Kafka cluster type: basic, standard, or dedicated"
+  type        = string
+  default     = "basic"
+}
+
+variable "confluent_kafka_topics" {
+  description = "Map of Kafka topics to create"
+  type = map(object({
+    partitions_count = number
+    config           = optional(map(string), {})
+  }))
+  default = {}
+}
