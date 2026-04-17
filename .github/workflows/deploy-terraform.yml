@@ -35,15 +35,18 @@ env:
   TF_VAR_region: europe-west4
   TF_VAR_my_domain: ${{ secrets.MY_DOMAIN }}
   TF_VAR_github_repository_name: ${{ github.event.repository.name }}
+  TF_VAR_github_owner: ${{ github.repository_owner }}
+  GITHUB_TOKEN: ${{ github.token }}
   CONFLUENT_CLOUD_API_KEY: ${{ secrets.CONFLUENT_CLOUD_API_KEY }}
   CONFLUENT_CLOUD_API_SECRET: ${{ secrets.CONFLUENT_CLOUD_API_SECRET }}
-  TF_VAR_enable_confluent_cloud: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.enable_confluent_cloud || 'false' }}
+  TF_VAR_enable_confluent_cloud: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.enable_confluent_cloud || 'true' }}
 
 jobs:
   terraform:
     runs-on: ubuntu-latest
     
     permissions:
+      actions: write
       contents: read
       id-token: write
       pull-requests: write

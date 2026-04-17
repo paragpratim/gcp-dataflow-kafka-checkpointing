@@ -97,6 +97,11 @@ variable "github_repository_name" {
   type        = string
 }
 
+variable "github_owner" {
+  description = "GitHub owner (org or user) for the target repository"
+  type        = string
+}
+
 variable "confluent_kafka_topics" {
   description = "Map of Kafka topics to create"
   type = map(object({

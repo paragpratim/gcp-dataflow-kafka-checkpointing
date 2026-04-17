@@ -33,3 +33,7 @@ provider "google-beta" {
 
 provider "confluent" {
 }
+
+provider "github" {
+  owner = var.github_owner
+}
