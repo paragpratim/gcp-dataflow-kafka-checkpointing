@@ -182,14 +182,30 @@ main:
           job_name: ${job_name}
 
     - stop_job:
-        call: googleapis.dataflow.v1b3.projects.locations.jobs.update
-        args:
-          projectId: ${project_id}
-          location: ${region}
-          jobId: ${matched_job_id}
-          body:
-            requestedState: ${stop_requested_state}
-        result: stop_response
+        try:
+          call: googleapis.dataflow.v1b3.projects.locations.jobs.update
+          args:
+            projectId: ${project_id}
+            location: ${region}
+            jobId: ${matched_job_id}
+            body:
+              requestedState: ${stop_requested_state}
+          result: stop_response
+        except:
+          as: stop_error
+          steps:
+            - maybe_handle_response_type_error:
+                switch:
+                  - condition: ${"ResponseTypeError" in default(map.get(stop_error, "tags"), [])}
+                    steps:
+                      - synthesize_stop_response:
+                          assign:
+                            - stop_response:
+                                accepted_via_connector_error_fallback: true
+                                connector_error: ${stop_error}
+                    next: stop_requested
+            - rethrow_stop_error:
+                raise: ${stop_error}
 
     - stop_requested:
         return:
