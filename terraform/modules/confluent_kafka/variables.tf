@@ -69,3 +69,8 @@ variable "github_repository_name" {
   description = "GitHub repository name where Actions secrets will be managed"
   type        = string
 }
+
+variable "github_owner" {
+  description = "GitHub owner (org or user) for the target repository"
+  type        = string
+}
