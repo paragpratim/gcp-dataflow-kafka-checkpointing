@@ -157,23 +157,8 @@ main:
         except:
           as: launch_error
           steps:
-            - maybe_handle_launch_conflict:
-                switch:
-                  - condition: ${launch_error.code == 409}
-                    next: launch_conflict_already_running
             - rethrow_launch_error:
                 raise: ${launch_error}
-
-    - launch_conflict_already_running:
-        return:
-          status: "already_running"
-          action: ${action}
-          job_name: ${job_name}
-          job_id: ${matched_job_id}
-          job_state: ${matched_job_state}
-          zone: ${zone}
-          is_streaming: ${is_streaming}
-          reason: "launch_conflict_409"
 
     - launched:
         return:
