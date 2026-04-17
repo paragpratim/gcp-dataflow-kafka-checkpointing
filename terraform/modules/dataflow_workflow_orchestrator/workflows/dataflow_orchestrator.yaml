@@ -85,7 +85,7 @@ main:
           steps:
             - evaluate_job:
                 switch:
-                  - condition: ${matched_job_id == "" and job.name == job_name and (job.currentState == "JOB_STATE_RUNNING" or job.currentState == "JOB_STATE_DRAINING" or job.currentState == "JOB_STATE_PENDING" or job.currentState == "JOB_STATE_QUEUED")}
+                  - condition: ${matched_job_id == "" and text.to_lower(job.name) == job_name and (job.currentState == "JOB_STATE_RUNNING" or job.currentState == "JOB_STATE_DRAINING" or job.currentState == "JOB_STATE_PENDING" or job.currentState == "JOB_STATE_QUEUED")}
                     steps:
                       - mark_running:
                           assign:
