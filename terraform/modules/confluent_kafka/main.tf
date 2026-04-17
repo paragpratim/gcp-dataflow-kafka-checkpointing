@@ -74,12 +74,16 @@ resource "confluent_api_key" "dataflow_kafka" {
 # ── Role binding: DeveloperRead + DeveloperWrite on all topics ────────────────
 
 resource "confluent_role_binding" "dataflow_developer_write" {
+  count = var.cluster_type == "basic" ? 0 : 1
+
   principal   = "User:${confluent_service_account.dataflow.id}"
   role_name   = "DeveloperWrite"
   crn_pattern = "${confluent_kafka_cluster.this.rbac_crn}/kafka=${confluent_kafka_cluster.this.id}/topic=*"
 }
 
 resource "confluent_role_binding" "dataflow_developer_read" {
+  count = var.cluster_type == "basic" ? 0 : 1
+
   principal   = "User:${confluent_service_account.dataflow.id}"
   role_name   = "DeveloperRead"
   crn_pattern = "${confluent_kafka_cluster.this.rbac_crn}/kafka=${confluent_kafka_cluster.this.id}/topic=*"

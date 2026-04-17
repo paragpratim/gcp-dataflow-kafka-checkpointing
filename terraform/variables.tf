@@ -98,5 +98,12 @@ variable "confluent_kafka_topics" {
     partitions_count = number
     config           = optional(map(string), {})
   }))
-  default = {}
+  default = {
+    test_df = {
+      partitions_count = 3
+      config = {
+        "retention.ms" = "21600000"
+      }
+    }
+  }
 }
