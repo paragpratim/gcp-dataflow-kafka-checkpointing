@@ -35,6 +35,7 @@ module "confluent_kafka" {
   cluster_cloud            = "GCP"
   cluster_region           = coalesce(var.confluent_cluster_region, var.region)
   cluster_type             = var.confluent_cluster_type
+  github_repository_name   = var.github_repository_name
 
   topics = var.confluent_kafka_topics
 }

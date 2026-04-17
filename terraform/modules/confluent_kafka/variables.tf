@@ -64,3 +64,8 @@ variable "deployment_sa_display_name" {
   type        = string
   default     = "svc-deployment"
 }
+
+variable "github_repository_name" {
+  description = "GitHub repository name where Actions secrets will be managed"
+  type        = string
+}

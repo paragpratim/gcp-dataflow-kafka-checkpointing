@@ -34,6 +34,7 @@ env:
   TF_VAR_project_id: ${{ secrets.DATAFLOW_TEST_PROJECT_ID }}
   TF_VAR_region: europe-west4
   TF_VAR_my_domain: ${{ secrets.MY_DOMAIN }}
+  TF_VAR_github_repository_name: ${{ github.event.repository.name }}
   CONFLUENT_CLOUD_API_KEY: ${{ secrets.CONFLUENT_CLOUD_API_KEY }}
   CONFLUENT_CLOUD_API_SECRET: ${{ secrets.CONFLUENT_CLOUD_API_SECRET }}
   TF_VAR_enable_confluent_cloud: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.enable_confluent_cloud || 'false' }}
