@@ -89,42 +89,6 @@ resource "confluent_role_binding" "dataflow_developer_read" {
   crn_pattern = "${confluent_kafka_cluster.this.rbac_crn}/kafka=${confluent_kafka_cluster.this.id}/topic=${each.key}"
 }
 
-# ── Basic Cluster ACLs: topic-scoped permissions for Dataflow ─────────────────
-
-resource "confluent_kafka_acl" "dataflow_write_on_topic" {
-  for_each = var.cluster_type == "basic" ? var.topics : {}
-
-  kafka_cluster {
-    id = confluent_kafka_cluster.this.id
-  }
-
-  resource_type = "TOPIC"
-  resource_name = each.key
-  pattern_type  = "LITERAL"
-  principal     = "User:${confluent_service_account.dataflow.id}"
-  host          = "*"
-  operation     = "WRITE"
-  permission    = "ALLOW"
-  rest_endpoint = confluent_kafka_cluster.this.rest_endpoint
-}
-
-resource "confluent_kafka_acl" "dataflow_read_on_topic" {
-  for_each = var.cluster_type == "basic" ? var.topics : {}
-
-  kafka_cluster {
-    id = confluent_kafka_cluster.this.id
-  }
-
-  resource_type = "TOPIC"
-  resource_name = each.key
-  pattern_type  = "LITERAL"
-  principal     = "User:${confluent_service_account.dataflow.id}"
-  host          = "*"
-  operation     = "READ"
-  permission    = "ALLOW"
-  rest_endpoint = confluent_kafka_cluster.this.rest_endpoint
-}
-
 # ── Topics ────────────────────────────────────────────────────────────────────
 
 resource "confluent_kafka_topic" "topics" {
@@ -138,4 +102,9 @@ resource "confluent_kafka_topic" "topics" {
   }
 
   rest_endpoint = confluent_kafka_cluster.this.rest_endpoint
+
+  credentials {
+    key    = confluent_api_key.dataflow_kafka.id
+    secret = confluent_api_key.dataflow_kafka.secret
+  }
 }
