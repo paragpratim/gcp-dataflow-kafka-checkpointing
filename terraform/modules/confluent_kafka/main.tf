@@ -1,12 +1,3 @@
-terraform {
-  required_providers {
-    confluent = {
-      source  = "confluentinc/confluent"
-      version = "~> 2.0"
-    }
-  }
-}
-
 # ── Environment ──────────────────────────────────────────────────────────────
 
 resource "confluent_environment" "this" {
@@ -71,6 +62,35 @@ resource "confluent_api_key" "dataflow_kafka" {
   }
 }
 
+# ── Deployment SA: data lookup + cluster-scoped Kafka API key ───────────────────
+# This SA (e.g. svc-deployment) owns the Cloud API key used to run Terraform.
+# We create a Kafka-plane key for it so it can manage topics and ACLs.
+
+data "confluent_service_account" "deployment" {
+  display_name = var.deployment_sa_display_name
+}
+
+resource "confluent_api_key" "deployment_kafka" {
+  display_name = "${var.deployment_sa_display_name}-kafka-api-key"
+  description  = "Kafka API key for deployment SA — used by Terraform to manage topics and ACLs"
+
+  owner {
+    id          = data.confluent_service_account.deployment.id
+    api_version = data.confluent_service_account.deployment.api_version
+    kind        = data.confluent_service_account.deployment.kind
+  }
+
+  managed_resource {
+    id          = confluent_kafka_cluster.this.id
+    api_version = confluent_kafka_cluster.this.api_version
+    kind        = confluent_kafka_cluster.this.kind
+
+    environment {
+      id = confluent_environment.this.id
+    }
+  }
+}
+
 # ── Role binding: DeveloperRead + DeveloperWrite on all topics ────────────────
 
 resource "confluent_role_binding" "dataflow_developer_write" {
@@ -104,7 +124,55 @@ resource "confluent_kafka_topic" "topics" {
   rest_endpoint = confluent_kafka_cluster.this.rest_endpoint
 
   credentials {
-    key    = confluent_api_key.dataflow_kafka.id
-    secret = confluent_api_key.dataflow_kafka.secret
+    key    = confluent_api_key.deployment_kafka.id
+    secret = confluent_api_key.deployment_kafka.secret
+  }
+}
+
+# ── ACLs (Basic cluster only): grant dataflow SA access per topic ─────────────
+# Basic clusters do not support resource-scoped RBAC role bindings.
+# ACLs are created using the deployment SA's Kafka key (OrganizationAdmin).
+
+resource "confluent_kafka_acl" "dataflow_write_on_topic" {
+  for_each = var.cluster_type == "basic" ? var.topics : {}
+
+  kafka_cluster {
+    id = confluent_kafka_cluster.this.id
+  }
+
+  resource_type = "TOPIC"
+  resource_name = each.key
+  pattern_type  = "LITERAL"
+  principal     = "User:${confluent_service_account.dataflow.id}"
+  host          = "*"
+  operation     = "WRITE"
+  permission    = "ALLOW"
+  rest_endpoint = confluent_kafka_cluster.this.rest_endpoint
+
+  credentials {
+    key    = confluent_api_key.deployment_kafka.id
+    secret = confluent_api_key.deployment_kafka.secret
+  }
+}
+
+resource "confluent_kafka_acl" "dataflow_read_on_topic" {
+  for_each = var.cluster_type == "basic" ? var.topics : {}
+
+  kafka_cluster {
+    id = confluent_kafka_cluster.this.id
+  }
+
+  resource_type = "TOPIC"
+  resource_name = each.key
+  pattern_type  = "LITERAL"
+  principal     = "User:${confluent_service_account.dataflow.id}"
+  host          = "*"
+  operation     = "READ"
+  permission    = "ALLOW"
+  rest_endpoint = confluent_kafka_cluster.this.rest_endpoint
+
+  credentials {
+    key    = confluent_api_key.deployment_kafka.id
+    secret = confluent_api_key.deployment_kafka.secret
   }
 }

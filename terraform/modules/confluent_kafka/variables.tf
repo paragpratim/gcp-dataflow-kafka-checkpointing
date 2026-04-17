@@ -58,3 +58,9 @@ variable "service_account_display_name" {
   type        = string
   default     = "dataflow-kafka-sa"
 }
+
+variable "deployment_sa_display_name" {
+  description = "Display name of the existing service account behind CONFLUENT_CLOUD_API_KEY (used to create the cluster-scoped Kafka key for topic/ACL management)"
+  type        = string
+  default     = "svc-deployment"
+}

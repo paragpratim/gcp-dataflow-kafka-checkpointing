@@ -102,7 +102,9 @@ variable "confluent_kafka_topics" {
     test_df = {
       partitions_count = 3
       config = {
-        "retention.ms" = "21600000"
+        "retention.ms"    = "21600000"
+        "cleanup.policy"  = "delete"
+        "retention.bytes" = "524288000"
       }
     }
   }
