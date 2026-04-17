@@ -53,9 +53,9 @@ on:
         default: ""
         type: string
       parameters_json:
-        description: "JSON object for launchParameter.parameters"
-        required: true
-        default: '{"pipelineName":"KafkaToBqPipeline"}'
+        description: "Extra parameters for launchParameter.parameters (pipelineName is set automatically from job_name)"
+        required: false
+        default: '{}'
         type: string
 
 env:
@@ -129,6 +129,9 @@ jobs:
 
           # Validate custom parameters JSON for a predictable workflow input.
           echo "$INPUT_PARAMETERS_JSON" | jq -e . >/dev/null
+
+          # Inject pipelineName from job_name, merging with any extra user-supplied params.
+          INPUT_PARAMETERS_JSON=$(echo "$INPUT_PARAMETERS_JSON" | jq -c --arg pn "$INPUT_JOB_NAME" '{pipelineName: $pn} + .')
 
           WORKFLOW_NAME="$INPUT_WORKFLOW_NAME"
           if [[ -z "$WORKFLOW_NAME" ]]; then
