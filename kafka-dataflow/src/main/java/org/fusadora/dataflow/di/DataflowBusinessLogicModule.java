@@ -1,6 +1,7 @@
 package org.fusadora.dataflow.di;
 
 import org.fusadora.dataflow.pipelines.BasePipeline;
+import org.fusadora.dataflow.pipelines.KafkaGenerateRandomPipeline;
 import org.fusadora.dataflow.pipelines.KafkaToBqPipeline;
 import org.fusadora.dataflow.services.CheckpointService;
 import org.fusadora.dataflow.services.InputService;
@@ -25,6 +26,7 @@ public class DataflowBusinessLogicModule extends CoreBusinessLogicModule {
 
     protected void bindServices() {
         bind(BasePipeline.class, KafkaToBqPipeline.class, KafkaToBqPipeline.PIPELINE_NAME);
+        bind(BasePipeline.class, KafkaGenerateRandomPipeline.class, KafkaGenerateRandomPipeline.PIPELINE_NAME);
 
         bind(InputService.class, getInputService());
         bind(OutputService.class, getOutputService());

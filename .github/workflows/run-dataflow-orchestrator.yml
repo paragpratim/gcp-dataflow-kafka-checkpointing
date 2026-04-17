@@ -23,7 +23,10 @@ on:
         description: "Dataflow job name"
         required: true
         default: "KafkaToBqPipeline"
-        type: string
+        type: choice
+        options:
+          - KafkaToBqPipeline
+          - KafkaGenerateRandom
       workflow_name:
         description: "Optional override for Cloud Workflow name"
         required: false

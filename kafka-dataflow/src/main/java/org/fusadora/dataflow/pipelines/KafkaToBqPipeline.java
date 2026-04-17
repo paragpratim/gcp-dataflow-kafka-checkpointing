@@ -59,7 +59,6 @@ public class KafkaToBqPipeline extends BasePipeline {
 
     @Override
     void run(Pipeline pipeline, DataflowOptions pipelineOptions) {
-        pipelineOptions.getJobName();
         final String jobId = pipelineOptions.getJobName();
         final String brokerHost = PropertyUtils.getProperty(PropertyUtils.KAFKA_BROKER_HOST);
         final long gapTimeoutSeconds = parseLongOrDefault(
