@@ -15,7 +15,7 @@ resource "google_project_iam_member" "workflow_service_account_roles" {
   for_each = toset([
     "roles/dataflow.developer",
     "roles/iam.serviceAccountUser",
-    "roles/storage.objectUser",
+    "roles/storage.objectViewer",
   ])
 
   project = var.project_id
