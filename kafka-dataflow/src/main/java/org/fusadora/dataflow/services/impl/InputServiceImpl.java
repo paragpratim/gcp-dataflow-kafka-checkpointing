@@ -29,7 +29,6 @@ import java.util.Map;
  * @since 04/12/2025
  */
 public class InputServiceImpl implements InputService {
-    private static final String KAFKA_PORT = ":9092";
     private static final Logger LOG = LoggerFactory.getLogger(InputServiceImpl.class);
 
     private final CheckpointService checkpointService;
@@ -39,7 +38,7 @@ public class InputServiceImpl implements InputService {
         this.checkpointService = checkpointService;
     }
 
-    private static @NotNull Map<String, Object> getKafkaConfigMap() {
+    private static @NotNull Map<String, Object> getKafkaConfigMap(String brokerIp) {
         String jaasTemplate = "org.apache.kafka.common.security.plain.PlainLoginModule required username='%s' password='%s';";
         String jaasCfg = String.format(jaasTemplate, PropertyUtils.getProperty(PropertyUtils.KAFKA_SASL_USERNAME)
                 , PropertyUtils.getProperty(PropertyUtils.KAFKA_SASL_PASSWORD));
@@ -48,7 +47,7 @@ public class InputServiceImpl implements InputService {
         kafkaConsumerConfig.put("group.id", PropertyUtils.getProperty(PropertyUtils.KAFKA_CONSUMER_GROUP_ID));
         kafkaConsumerConfig.put("auto.offset.reset", "earliest");
         kafkaConsumerConfig.put("enable.auto.commit", "false");
-        kafkaConsumerConfig.put("security.protocol", "SASL_SSL");
+        kafkaConsumerConfig.put("security.protocol", PropertyUtils.resolveKafkaSecurityProtocol(brokerIp));
         kafkaConsumerConfig.put("sasl.jaas.config", jaasCfg);
         kafkaConsumerConfig.put("sasl.mechanism", "PLAIN");
         kafkaConsumerConfig.put("client.dns.lookup", "use_all_dns_ips");
@@ -69,8 +68,9 @@ public class InputServiceImpl implements InputService {
             return;
         }
 
-        Map<String, Object> kafkaConsumerConfig = new HashMap<>(getKafkaConfigMap());
-        kafkaConsumerConfig.put("bootstrap.servers", brokerIp.concat(KAFKA_PORT));
+        String bootstrapServers = PropertyUtils.normalizeKafkaBootstrapServers(brokerIp);
+        Map<String, Object> kafkaConsumerConfig = new HashMap<>(getKafkaConfigMap(brokerIp));
+        kafkaConsumerConfig.put("bootstrap.servers", bootstrapServers);
         kafkaConsumerConfig.put("key.deserializer", StringDeserializer.class.getName());
         kafkaConsumerConfig.put("value.deserializer", StringDeserializer.class.getName());
 
@@ -90,10 +90,11 @@ public class InputServiceImpl implements InputService {
 
     @Override
     public PCollection<KafkaRecord<String, String>> readFromKafka(Pipeline pipeline, String brokerIp, String topic, String transformName) {
-        Map<String, Object> kafkaConsumerConfig = getKafkaConfigMap();
+        String bootstrapServers = PropertyUtils.normalizeKafkaBootstrapServers(brokerIp);
+        Map<String, Object> kafkaConsumerConfig = getKafkaConfigMap(brokerIp);
 
         return pipeline.apply(transformName, KafkaIO.<String, String>read()
-                .withBootstrapServers(brokerIp.concat(KAFKA_PORT))
+                .withBootstrapServers(bootstrapServers)
                 .withTopic(topic)
                 .withConsumerConfigUpdates(kafkaConsumerConfig)
                 .withKeyDeserializer(StringDeserializer.class)

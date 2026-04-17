@@ -3,6 +3,10 @@ package org.fusadora.dataflow.utilities;
 import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.Arrays;
+import java.util.Locale;
+import java.util.stream.Collectors;
+
 /**
  * Static utility for reading application properties from the configuration file.
  * Delegates to {@link Config} for the actual property lookup.
@@ -30,6 +34,7 @@ public final class PropertyUtils {
     public static final String KAFKA_CONSUMER_GROUP_ID = "kafka.consumer.group.id";
     public static final String KAFKA_SASL_USERNAME = "kafka.sasl.username";
     public static final String KAFKA_SASL_PASSWORD = "kafka.sasl.password";
+    private static final String DEFAULT_KAFKA_SECURITY_PROTOCOL = "SASL_SSL";
 
     // Checkpoint
     public static final String CHECKPOINT_COLLECTION = "checkpoint.collection";
@@ -51,6 +56,55 @@ public final class PropertyUtils {
     public static String getProperty(String key) {
         Preconditions.checkArgument(StringUtils.isNotBlank(key), "Cannot get property with a blank key");
         return Config.getProperty(key);
+    }
+
+    /**
+     * Converts URI-style Kafka bootstrap endpoints (e.g. SASL_SSL://host:9092)
+     * into Kafka bootstrap.servers format (host:9092).
+     */
+    public static String normalizeKafkaBootstrapServers(String bootstrapServers) {
+        Preconditions.checkArgument(StringUtils.isNotBlank(bootstrapServers), "Kafka bootstrap servers cannot be blank");
+
+        return Arrays.stream(bootstrapServers.split(","))
+                .map(String::trim)
+                .filter(StringUtils::isNotBlank)
+                .map(PropertyUtils::stripProtocolPrefix)
+                .map(PropertyUtils::stripTrailingSlash)
+                .collect(Collectors.joining(","));
+    }
+
+    /**
+     * Uses the URI scheme from bootstrap servers as Kafka security protocol when present.
+     */
+    public static String resolveKafkaSecurityProtocol(String bootstrapServers) {
+        if (StringUtils.isBlank(bootstrapServers)) {
+            return DEFAULT_KAFKA_SECURITY_PROTOCOL;
+        }
+
+        for (String server : bootstrapServers.split(",")) {
+            String value = server.trim();
+            int protocolSeparatorIndex = value.indexOf("://");
+            if (protocolSeparatorIndex > 0) {
+                return value.substring(0, protocolSeparatorIndex).trim().toUpperCase(Locale.ROOT);
+            }
+        }
+
+        return DEFAULT_KAFKA_SECURITY_PROTOCOL;
+    }
+
+    private static String stripProtocolPrefix(String server) {
+        int protocolSeparatorIndex = server.indexOf("://");
+        if (protocolSeparatorIndex > 0) {
+            return server.substring(protocolSeparatorIndex + 3);
+        }
+        return server;
+    }
+
+    private static String stripTrailingSlash(String server) {
+        if (server.endsWith("/")) {
+            return server.substring(0, server.length() - 1);
+        }
+        return server;
     }
 
 }
