@@ -11,9 +11,6 @@ terraform {
   }
 }
 
-provider "confluent" {
-}
-
 provider "github" {
   owner = var.github_owner
 }
