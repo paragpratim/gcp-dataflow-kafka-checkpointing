@@ -7,9 +7,10 @@ import org.fusadora.dataflow.dto.KafkaEventEnvelope;
 /**
  * org.fusadora.dataflow.dofn.ExtractEnvelopeOffsetsFn
  * Maps a {@link KafkaEventEnvelope} to a KV of {@code topic:partition} key and offset value.
- * Used to derive handled offsets directly from source envelopes before the BigQuery write step.
- * This avoids relying on BigQuery Storage Write API result rows, which strip unknown schema fields
- * (including Kafka metadata) during proto serialisation, making offset recovery impossible post-write.
+ * Provides an alternative pre-write offset extraction path from source envelopes.
+ * The pipeline uses post-write extraction via {@code ExtractHandledWriteOffsetsFn} as the primary path
+ * (reading from the {@code __metadata} RECORD field written to BigQuery). This class is retained as an
+ * alternative for scenarios where pre-write extraction is preferred.
  *
  * @author Parag Ghosh
  * @since 04/2026

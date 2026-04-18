@@ -94,7 +94,7 @@ public class KafkaToBqPipeline extends BasePipeline {
 
             // Write to BigQuery.
             // Kafka metadata is stored in the __metadata RECORD field so it survives BQ Storage Write API
-            // proto serialisation and can be recovered from both success and failed result rows.
+            // proto serialization and can be recovered from both success and failed result rows.
             WriteResult writeResult = contiguousKafkaMessage.apply("Write Raw Messages to BigQuery",
                     new WriteRawMessageTransform(getOutputService(), topicConfig));
 
