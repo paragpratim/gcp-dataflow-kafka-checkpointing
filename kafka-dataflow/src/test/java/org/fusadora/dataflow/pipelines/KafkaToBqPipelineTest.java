@@ -48,7 +48,7 @@ class KafkaToBqPipelineTest {
     }
 
     @Test
-    void pipelineCommitsAcrossHandledFailureRows() {
+    void pipelineStallsCheckpointAtFirstBqWriteFailure() {
         TestInputService.setSourceTransform(
                 Create.of(
                         KafkaTestData.kafkaRecord("test_df", 0, 0L, "a"),
@@ -60,7 +60,9 @@ class KafkaToBqPipelineTest {
 
         runPipeline("job-failure-handled");
 
-        assertEquals(3L, RecordingCheckpointService.nextOffset("test_df", 0));
+        // Offset 1 fails BQ write and is not committed; contiguous progression stalls at 1.
+        // The failed record will be retried on the next pipeline run.
+        assertEquals(1L, RecordingCheckpointService.nextOffset("test_df", 0));
     }
 
     @Test
@@ -89,13 +91,15 @@ class KafkaToBqPipelineTest {
                                 KafkaTestData.kafkaRecord("test_df", 0, 2L, "c"))
                         .advanceProcessingTime(Duration.standardMinutes(6))
                         .advanceWatermarkToInfinity());
-        // Offset 2 is treated as handled via failed-write path, while gap-timeout path emits missing offset 1.
+        // Offset 2 fails BQ write; gap-timeout path emits missing offset 1.
+        // Only offset 0 (BQ success) and offset 1 (gap-timeout) contribute to the checkpoint.
         TestOutputService.setFailingOffsets(Set.of(2L));
         RecordingCheckpointService.seed(Map.of("test_df:0", 0L));
 
         runPipeline("job-windowfn-regression");
 
-        assertEquals(3L, RecordingCheckpointService.nextOffset("test_df", 0));
+        // Checkpoint advances through 0 (BQ success) and 1 (gap-timeout) then stalls at 2 (BQ failure).
+        assertEquals(2L, RecordingCheckpointService.nextOffset("test_df", 0));
     }
 
     private void runPipeline(String jobName) {

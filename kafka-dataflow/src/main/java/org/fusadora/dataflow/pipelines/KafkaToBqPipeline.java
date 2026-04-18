@@ -93,43 +93,35 @@ public class KafkaToBqPipeline extends BasePipeline {
                             Window.into(FixedWindows.of(Duration.standardSeconds(WINDOW_SIZE_SECONDS))));
 
             // Write to BigQuery.
-            // Kafka metadata is stored in the __metadata RECORD field so it survives BQ Storage Write API
-            // proto serialization and can be recovered from both success and failed result rows.
+            // Kafka metadata is stored in the __metadata RECORD field, which is declared in the table schema,
+            // so it survives BQ Storage Write API proto serialization and is present in write result rows.
             WriteResult writeResult = contiguousKafkaMessage.apply("Write Raw Messages to BigQuery",
                     new WriteRawMessageTransform(getOutputService(), topicConfig));
 
-            // Success path: extract offsets from rows confirmed written to BQ.
-            PCollection<KV<String, Long>> handledOffsetsFromSuccess = writeResult.getSuccessfulStorageApiInserts()
-                    .apply("Extract Handled Offsets From Successful Writes [" + topicConfig.getTopicName() + "]",
+            // Extract handled offsets from rows confirmed written to BQ.
+            PCollection<KV<String, Long>> handledOffsetsFromBq = writeResult.getSuccessfulStorageApiInserts()
+                    .apply("Extract Handled Offsets From BQ Writes [" + topicConfig.getTopicName() + "]",
                             MapElements.via(new ExtractHandledWriteOffsetsFn()))
-                    .apply("Drop Invalid Offsets From Successful Writes [" + topicConfig.getTopicName() + "]",
+                    .apply("Drop Invalid Handled Offsets [" + topicConfig.getTopicName() + "]",
                             ParDo.of(new DropInvalidHandledRowsFn()));
 
-            // Failed path: log failures and also commit those offsets to maintain at-least-once checkpoint progression.
-            PCollection<KV<String, Long>> handledOffsetsFromFailed = writeResult.getFailedStorageApiInserts()
-                    .apply("Log and Extract Failed Write Rows [" + topicConfig.getTopicName() + "]",
-                            ParDo.of(new ExtractFailedRowsDoFn(topicConfig.getTopicName())))
-                    .apply("Extract Handled Offsets From Failed Writes [" + topicConfig.getTopicName() + "]",
-                            MapElements.via(new ExtractHandledWriteOffsetsFn()))
-                    .apply("Drop Invalid Offsets From Failed Writes [" + topicConfig.getTopicName() + "]",
-                            ParDo.of(new DropInvalidHandledRowsFn()));
+            // Log BQ write failures for audit. Failed offsets do not advance the checkpoint;
+            // they will be retried on the next pipeline run.
+            writeResult.getFailedStorageApiInserts()
+                    .apply("Log BQ Storage API Failures [" + topicConfig.getTopicName() + "]",
+                            ParDo.of(new ExtractFailedRowsDoFn(topicConfig.getTopicName())));
 
-            // Commit state is key+window scoped, so normalize all inputs to a single global window before merge.
-            PCollection<KV<String, Long>> handledOffsetsSuccessGlobal = handledOffsetsFromSuccess
-                    .apply("Global Window Handled Success Offsets [" + topicConfig.getTopicName() + "]",
-                            Window.into(new GlobalWindows()));
-
-            PCollection<KV<String, Long>> handledOffsetsFailedGlobal = handledOffsetsFromFailed
-                    .apply("Global Window Handled Failed Offsets [" + topicConfig.getTopicName() + "]",
+            // Commit state is key+window scoped, so normalize both inputs to a single global window before merge.
+            PCollection<KV<String, Long>> handledOffsetsFromBqGlobal = handledOffsetsFromBq
+                    .apply("Global Window Handled BQ Offsets [" + topicConfig.getTopicName() + "]",
                             Window.into(new GlobalWindows()));
 
             PCollection<KV<String, Long>> sourceGapTimeoutOffsetsGlobal = sourceGapTimeoutOffsets
                     .apply("Global Window Gap Timeout Offsets [" + topicConfig.getTopicName() + "]",
                             Window.into(new GlobalWindows()));
 
-            //Merge success, failed, and gap-timeout offsets and commit from one stream.
-            PCollectionList.of(handledOffsetsSuccessGlobal)
-                    .and(handledOffsetsFailedGlobal)
+            //Merge BQ-confirmed offsets with gap-timeout offsets and commit from one stream.
+            PCollectionList.of(handledOffsetsFromBqGlobal)
                     .and(sourceGapTimeoutOffsetsGlobal)
                     .apply("Merge All Handled Offsets [" + topicConfig.getTopicName() + "]", Flatten.pCollections())
                     .apply("Commit Offsets From Handled Stream [" + topicConfig.getTopicName() + "]",
