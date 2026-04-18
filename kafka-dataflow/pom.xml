@@ -16,7 +16,7 @@
         <main.class>org.fusadora.dataflow.pipelines.PipelineRunner</main.class>
         <!-- Dependency versions -->
         <guice.version>7.0.0</guice.version>
-        <apache.beam.version>2.71.0</apache.beam.version>
+        <apache.beam.version>2.72.0</apache.beam.version>
         <slf4j.version>2.0.17</slf4j.version>
     </properties>
 
