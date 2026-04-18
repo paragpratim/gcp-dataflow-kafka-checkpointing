@@ -15,7 +15,10 @@ import static org.fusadora.dataflow.common.KafkaMetadataConstants.*;
  * This is a Beam DoFn that transforms a KafkaEventEnvelope into a TableRow suitable for BigQuery insertion.
  * It maps the raw message payload and Kafka topic name to the BigQuery schema fields.
  * The version field is set to the current timestamp to facilitate versioning in BigQuery.
- * This DoFn is designed to be used in a Beam pipeline that reads from Kafka and writes to BigQuery.
+ * Additionally, it embeds Kafka source metadata (topic, partition, offset) into the {@code __metadata}
+ * RECORD field declared in the table schema. Because {@code __metadata} is a declared schema field, it
+ * survives BQ Storage Write API proto serialization and is present in {@code getSuccessfulStorageApiInserts()}
+ * result rows, enabling post-write checkpoint offset extraction.
  *
  * @author Parag Ghosh
  * @since 10/04/2026
