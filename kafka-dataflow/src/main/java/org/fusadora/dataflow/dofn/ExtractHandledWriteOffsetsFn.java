@@ -3,9 +3,12 @@ package org.fusadora.dataflow.dofn;
 import com.google.api.services.bigquery.model.TableRow;
 import org.apache.beam.sdk.transforms.SimpleFunction;
 import org.apache.beam.sdk.values.KV;
+import org.fusadora.dataflow.common.BigquerySchemaConstants;
 import org.fusadora.dataflow.common.KafkaMetadataConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Map;
 
 /**
  * org.fusadora.dataflow.dofn.ExtractHandledWriteOffsetsFn
@@ -30,9 +33,14 @@ public class ExtractHandledWriteOffsetsFn extends SimpleFunction<TableRow, KV<St
             return KV.of(INVALID_KEY, INVALID_OFFSET);
         }
 
-        Object topic = row.get(KafkaMetadataConstants.META_KAFKA_TOPIC);
-        Object partition = row.get(KafkaMetadataConstants.META_KAFKA_PARTITION);
-        Object offset = row.get(KafkaMetadataConstants.META_KAFKA_OFFSET);
+        Object metadataObj = row.get(BigquerySchemaConstants.SCHEMA_METADATA_RECORD);
+        if (!(metadataObj instanceof Map<?, ?> metadataMap)) {
+            return KV.of(INVALID_KEY, INVALID_OFFSET);
+        }
+
+        Object topic = metadataMap.get(KafkaMetadataConstants.META_KAFKA_TOPIC);
+        Object partition = metadataMap.get(KafkaMetadataConstants.META_KAFKA_PARTITION);
+        Object offset = metadataMap.get(KafkaMetadataConstants.META_KAFKA_OFFSET);
         if (topic == null || partition == null || offset == null) {
             return KV.of(INVALID_KEY, INVALID_OFFSET);
         }

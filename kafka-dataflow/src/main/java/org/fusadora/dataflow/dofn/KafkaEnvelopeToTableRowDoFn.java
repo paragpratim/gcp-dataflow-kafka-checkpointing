@@ -8,6 +8,7 @@ import org.fusadora.dataflow.dto.TopicConfig;
 import java.util.Objects;
 
 import static org.fusadora.dataflow.common.BigquerySchemaConstants.*;
+import static org.fusadora.dataflow.common.KafkaMetadataConstants.*;
 
 /**
  * org.fusadora.dataflow.dofn.KafkaEnvelopeToTableRowDoFn
@@ -32,10 +33,17 @@ public class KafkaEnvelopeToTableRowDoFn extends DoFn<KafkaEventEnvelope, TableR
     @ProcessElement
     public void processElement(ProcessContext processContext) {
         KafkaEventEnvelope envelope = Objects.requireNonNull(processContext.element());
+
+        TableRow metadata = new TableRow();
+        metadata.put(META_KAFKA_TOPIC, envelope.getTopic());
+        metadata.put(META_KAFKA_PARTITION, envelope.getPartition());
+        metadata.put(META_KAFKA_OFFSET, envelope.getOffset());
+
         TableRow tr = new TableRow();
         tr.put(SCHEMA_RAW_MESSAGE, envelope.getPayload());
         tr.put(SCHEMA_KAFKA_TOPIC, topicConfig.getTopicName());
         tr.put(SCHEMA_VERSION, System.currentTimeMillis());
+        tr.put(SCHEMA_METADATA_RECORD, metadata);
         processContext.output(tr);
     }
 }

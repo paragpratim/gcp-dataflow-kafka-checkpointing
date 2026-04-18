@@ -8,5 +8,15 @@
     "mode":"NULLABLE",
     "name":"kafka_topic",
     "type":"STRING"
+  },
+  {
+    "mode":"NULLABLE",
+    "name":"__metadata",
+    "type":"RECORD",
+    "fields":[
+      {"mode":"NULLABLE","name":"topic","type":"STRING"},
+      {"mode":"NULLABLE","name":"partition","type":"INTEGER"},
+      {"mode":"NULLABLE","name":"offset","type":"INTEGER"}
+    ]
   }
 ]

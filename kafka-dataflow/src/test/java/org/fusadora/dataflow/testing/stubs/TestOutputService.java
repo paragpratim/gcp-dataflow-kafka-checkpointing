@@ -14,6 +14,7 @@ import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollection;
 import org.fusadora.dataflow.services.OutputService;
 import org.fusadora.dataflow.testing.BigQueryTestUtils;
+import org.fusadora.dataflow.common.BigquerySchemaConstants;
 import org.fusadora.dataflow.common.KafkaMetadataConstants;
 import org.jspecify.annotations.NonNull;
 
@@ -23,6 +24,7 @@ import java.io.Serial;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -63,16 +65,20 @@ public class TestOutputService implements OutputService, Serializable {
         PCollection<TableRow> successRows = input.apply(transformName + "-success-filter",
                 Filter.by(row -> {
                     if (row == null) return false;
-                    Object offsetObj = row.get(KafkaMetadataConstants.META_KAFKA_OFFSET);
-                    if (offsetObj == null) return true; // no metadata field: not a configured failure
+                    Object metadataObj = row.get(BigquerySchemaConstants.SCHEMA_METADATA_RECORD);
+                    if (!(metadataObj instanceof Map)) return true; // no __metadata: not a configured failure
+                    Object offsetObj = ((Map<?, ?>) metadataObj).get(KafkaMetadataConstants.META_KAFKA_OFFSET);
+                    if (offsetObj == null) return true;
                     return !failingOffsets.contains(Long.parseLong(offsetObj.toString()));
                 }));
 
         PCollection<TableRow> failedRowValues = input.apply(transformName + "-failure-filter",
                 Filter.by(row -> {
                     if (row == null) return false;
-                    Object offsetObj = row.get(KafkaMetadataConstants.META_KAFKA_OFFSET);
-                    if (offsetObj == null) return false; // no metadata field: not a configured failure
+                    Object metadataObj = row.get(BigquerySchemaConstants.SCHEMA_METADATA_RECORD);
+                    if (!(metadataObj instanceof Map)) return false; // no __metadata: not a configured failure
+                    Object offsetObj = ((Map<?, ?>) metadataObj).get(KafkaMetadataConstants.META_KAFKA_OFFSET);
+                    if (offsetObj == null) return false;
                     return failingOffsets.contains(Long.parseLong(offsetObj.toString()));
                 }));
 

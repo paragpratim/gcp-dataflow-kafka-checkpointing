@@ -10,6 +10,7 @@ import org.apache.beam.sdk.io.gcp.bigquery.WriteResult;
 import org.apache.beam.sdk.transforms.Create;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.TupleTag;
+import org.fusadora.dataflow.common.BigquerySchemaConstants;
 import org.fusadora.dataflow.common.KafkaMetadataConstants;
 
 import java.lang.reflect.InvocationTargetException;
@@ -17,6 +18,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Stateless BigQuery-related fixtures used by tests.
@@ -72,7 +74,11 @@ public final class BigQueryTestUtils {
     }
 
     public static long parseOffset(TableRow row) {
-        return Long.parseLong(row.get(KafkaMetadataConstants.META_KAFKA_OFFSET).toString());
+        Object metadataObj = row.get(BigquerySchemaConstants.SCHEMA_METADATA_RECORD);
+        if (metadataObj instanceof Map<?, ?> metadataMap) {
+            return Long.parseLong(metadataMap.get(KafkaMetadataConstants.META_KAFKA_OFFSET).toString());
+        }
+        throw new IllegalArgumentException("No __metadata record found in row: " + row);
     }
 
     public static Collection<Long> offsetsFromRows(Iterable<TableRow> rows) {

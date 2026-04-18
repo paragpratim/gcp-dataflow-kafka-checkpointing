@@ -5,9 +5,9 @@ package org.fusadora.dataflow.common;
  */
 public final class KafkaMetadataConstants {
 
-    public static final String META_KAFKA_TOPIC = "_meta_kafka_topic";
-    public static final String META_KAFKA_PARTITION = "_meta_kafka_partition";
-    public static final String META_KAFKA_OFFSET = "_meta_kafka_offset";
+    public static final String META_KAFKA_TOPIC = "topic";
+    public static final String META_KAFKA_PARTITION = "partition";
+    public static final String META_KAFKA_OFFSET = "offset";
 
     private KafkaMetadataConstants() {
         throw new IllegalStateException("Utility class");

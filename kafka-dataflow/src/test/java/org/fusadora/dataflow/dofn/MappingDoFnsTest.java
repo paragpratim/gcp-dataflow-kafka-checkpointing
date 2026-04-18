@@ -17,7 +17,10 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
+import static org.fusadora.dataflow.common.BigquerySchemaConstants.SCHEMA_METADATA_RECORD;
+import static org.fusadora.dataflow.common.KafkaMetadataConstants.*;
 import static org.junit.Assert.assertNotNull;
 
 public class MappingDoFnsTest {
@@ -93,12 +96,23 @@ public class MappingDoFnsTest {
 
         assertNotNull(rows);
 
-        // Pure mapper: both rows are emitted regardless of payload content
+        // Pure mapper: both rows are emitted regardless of payload content, each with __metadata record.
         PAssert.that(rows).satisfies(outputRows -> {
             List<TableRow> list = new ArrayList<>();
             outputRows.forEach(list::add);
             if (list.size() != 2) {
                 throw new AssertionError("Expected 2 rows from pure mapper but found " + list.size());
+            }
+            for (TableRow row : list) {
+                Object metadataObj = row.get(SCHEMA_METADATA_RECORD);
+                if (!(metadataObj instanceof Map<?, ?> metadataMap)) {
+                    throw new AssertionError("Expected __metadata RECORD in row but was: " + metadataObj);
+                }
+                if (metadataMap.get(META_KAFKA_TOPIC) == null
+                        || metadataMap.get(META_KAFKA_PARTITION) == null
+                        || metadataMap.get(META_KAFKA_OFFSET) == null) {
+                    throw new AssertionError("__metadata record is missing topic/partition/offset: " + metadataMap);
+                }
             }
             return null;
         });
@@ -108,11 +122,14 @@ public class MappingDoFnsTest {
 
     @Test
     public void extractHandledWriteOffsetsParsesValidRowsAndDropInvalidHandledRowsFiltersSentinel() {
-        TableRow valid = new TableRow()
-                .set("_meta_kafka_topic", "test_df")
-                .set("_meta_kafka_partition", 1)
-                .set("_meta_kafka_offset", 9L);
-        TableRow invalid = new TableRow().set("_meta_kafka_topic", "test_df");
+        TableRow validMetadata = new TableRow()
+                .set("topic", "test_df")
+                .set("partition", 1)
+                .set("offset", 9L);
+        TableRow valid = new TableRow().set("__metadata", validMetadata);
+
+        TableRow invalidMetadata = new TableRow().set("topic", "test_df"); // missing partition and offset
+        TableRow invalid = new TableRow().set("__metadata", invalidMetadata);
 
         PCollection<KV<String, Long>> offsets = pipeline
                 .apply(Create.of(valid, invalid))
@@ -127,10 +144,11 @@ public class MappingDoFnsTest {
 
     @Test
     public void extractFailedRowsEmitsOriginalRow() {
-        TableRow failedRow = new TableRow()
-                .set("_meta_kafka_topic", "test_df")
-                .set("_meta_kafka_partition", 0)
-                .set("_meta_kafka_offset", 11L);
+        TableRow failedMetadata = new TableRow()
+                .set("topic", "test_df")
+                .set("partition", 0)
+                .set("offset", 11L);
+        TableRow failedRow = new TableRow().set("__metadata", failedMetadata);
 
         PCollection<TableRow> rows = pipeline
                 .apply(Create.of(new BigQueryStorageApiInsertError(failedRow, "boom")))
