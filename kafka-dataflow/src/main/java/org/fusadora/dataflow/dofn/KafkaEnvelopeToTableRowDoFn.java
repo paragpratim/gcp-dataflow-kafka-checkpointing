@@ -37,10 +37,13 @@ public class KafkaEnvelopeToTableRowDoFn extends DoFn<KafkaEventEnvelope, TableR
         tr.put(SCHEMA_RAW_MESSAGE, envelope.getPayload());
         tr.put(SCHEMA_KAFKA_TOPIC, topicConfig.getTopicName());
         tr.put(SCHEMA_VERSION, System.currentTimeMillis());
-        // Metadata is carried only for post-write checkpointing and is not part of the BQ schema.
-        tr.put(KafkaMetadataConstants.META_KAFKA_TOPIC, envelope.getTopic());
-        tr.put(KafkaMetadataConstants.META_KAFKA_PARTITION, envelope.getPartition());
-        tr.put(KafkaMetadataConstants.META_KAFKA_OFFSET, envelope.getOffset());
+
+        TableRow metadata = new TableRow();
+        metadata.put(KafkaMetadataConstants.META_KAFKA_TOPIC, envelope.getTopic());
+        metadata.put(KafkaMetadataConstants.META_KAFKA_PARTITION, envelope.getPartition());
+        metadata.put(KafkaMetadataConstants.META_KAFKA_OFFSET, envelope.getOffset());
+        tr.put(KafkaMetadataConstants.METADATA_RECORD_FIELD, metadata);
+
         processContext.output(tr);
     }
 }

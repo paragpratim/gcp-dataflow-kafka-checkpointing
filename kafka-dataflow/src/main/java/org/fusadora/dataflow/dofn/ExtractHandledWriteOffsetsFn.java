@@ -7,6 +7,8 @@ import org.fusadora.dataflow.common.KafkaMetadataConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Map;
+
 /**
  * org.fusadora.dataflow.dofn.ExtractHandledWriteOffsetsFn
  * This is Beam DoFn to extract the Kafka topic, partition and offset from the success metadata of a write operation.
@@ -30,9 +32,26 @@ public class ExtractHandledWriteOffsetsFn extends SimpleFunction<TableRow, KV<St
             return KV.of(INVALID_KEY, INVALID_OFFSET);
         }
 
-        Object topic = row.get(KafkaMetadataConstants.META_KAFKA_TOPIC);
-        Object partition = row.get(KafkaMetadataConstants.META_KAFKA_PARTITION);
-        Object offset = row.get(KafkaMetadataConstants.META_KAFKA_OFFSET);
+        Object topic;
+        Object partition;
+        Object offset;
+
+        Object metadataRecord = row.get(KafkaMetadataConstants.METADATA_RECORD_FIELD);
+        if (metadataRecord instanceof TableRow metadataTableRow) {
+            topic = metadataTableRow.get(KafkaMetadataConstants.META_KAFKA_TOPIC);
+            partition = metadataTableRow.get(KafkaMetadataConstants.META_KAFKA_PARTITION);
+            offset = metadataTableRow.get(KafkaMetadataConstants.META_KAFKA_OFFSET);
+        } else if (metadataRecord instanceof Map<?, ?> metadataMap) {
+            topic = metadataMap.get(KafkaMetadataConstants.META_KAFKA_TOPIC);
+            partition = metadataMap.get(KafkaMetadataConstants.META_KAFKA_PARTITION);
+            offset = metadataMap.get(KafkaMetadataConstants.META_KAFKA_OFFSET);
+        } else {
+            // Backward-compatible fallback for rows produced before nested metadata rollout.
+            topic = row.get(KafkaMetadataConstants.META_KAFKA_TOPIC);
+            partition = row.get(KafkaMetadataConstants.META_KAFKA_PARTITION);
+            offset = row.get(KafkaMetadataConstants.META_KAFKA_OFFSET);
+        }
+
         if (topic == null || partition == null || offset == null) {
             return KV.of(INVALID_KEY, INVALID_OFFSET);
         }

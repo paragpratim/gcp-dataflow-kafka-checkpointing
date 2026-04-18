@@ -21,7 +21,7 @@ class KafkaToMessageTransformTest {
     }
 
     @Test
-    void convertKafkaRecordsIntoKafkaEventEnvelopes() {
+    void convertsKafkaRecordsIntoKafkaEventEnvelopes() {
         Pipeline pipeline = Pipeline.create();
         TestInputService.setSourceTransform(Create.of(
                         KafkaTestData.kafkaRecord("test_df", 0, 10L, "a"),

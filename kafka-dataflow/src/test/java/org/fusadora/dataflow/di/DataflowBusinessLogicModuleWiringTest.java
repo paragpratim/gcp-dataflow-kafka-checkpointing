@@ -11,12 +11,13 @@ import org.fusadora.dataflow.testing.stubs.TestInputService;
 import org.fusadora.dataflow.testing.stubs.TestOutputService;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 class DataflowBusinessLogicModuleWiringTest {
 
     @Test
-    void testModuleBindsPipelineAndSwapsServicesWithTestStubs() {
+    void bindsPipelinesAndSwapsServicesWithTestStubs() {
         TestDataflowBusinessLogicModule module = new TestDataflowBusinessLogicModule();
 
         BasePipeline pipeline = GuiceInitialiser.getGuiceInitialisedClass(

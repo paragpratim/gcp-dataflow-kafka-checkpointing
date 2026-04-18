@@ -1,30 +1,28 @@
 package org.fusadora.dataflow.ptransform;
 
+import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.coders.SerializableCoder;
 import org.apache.beam.sdk.testing.PAssert;
-import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.testing.TestStream;
 import org.apache.beam.sdk.transforms.Create;
 import org.apache.beam.sdk.values.PCollection;
 import org.fusadora.dataflow.dto.KafkaEventEnvelope;
 import org.fusadora.dataflow.services.CheckpointService;
 import org.joda.time.Duration;
-import org.junit.Test;
-import org.junit.Rule;
+import org.junit.jupiter.api.Test;
 
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.Map;
 
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-public class SelectContiguousOffsetsTransformTest {
+class SelectContiguousOffsetsTransformTest {
 
-    @Rule
-    public final TestPipeline pipeline = TestPipeline.create();
+    private final Pipeline pipeline = Pipeline.create();
 
     @Test
-    public void emitsOnlyContiguousOffsetsFromCheckpoint() {
+    void emitsOnlyContiguousOffsetsFromCheckpoint() {
 
         PCollection<KafkaEventEnvelope> input = pipeline.apply(Create.of(
                 envelope(4, "a"),
@@ -43,7 +41,7 @@ public class SelectContiguousOffsetsTransformTest {
     }
 
     @Test
-    public void skipsGapAfterTimeoutAndContinuesForward() {
+    void skipsGapAfterTimeoutAndContinuesForward() {
 
         TestStream<KafkaEventEnvelope> stream = TestStream.create(SerializableCoder.of(KafkaEventEnvelope.class))
                 .addElements(envelope(0, "a"), envelope(2, "c"))
@@ -65,7 +63,7 @@ public class SelectContiguousOffsetsTransformTest {
     }
 
     @Test
-    public void resolvesGapBeforeTimeout() {
+    void resolvesGapBeforeTimeout() {
         TestStream<KafkaEventEnvelope> stream = TestStream.create(SerializableCoder.of(KafkaEventEnvelope.class))
                 .addElements(envelope(0, "a"), envelope(2, "c"))
                 .advanceProcessingTime(Duration.standardSeconds(30))

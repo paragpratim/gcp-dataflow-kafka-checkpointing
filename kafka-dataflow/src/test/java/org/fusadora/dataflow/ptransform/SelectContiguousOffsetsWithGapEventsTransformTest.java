@@ -1,8 +1,8 @@
 package org.fusadora.dataflow.ptransform;
 
+import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.coders.SerializableCoder;
 import org.apache.beam.sdk.testing.PAssert;
-import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.testing.TestStream;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollectionTuple;
@@ -10,27 +10,25 @@ import org.fusadora.dataflow.dto.KafkaEventEnvelope;
 import org.fusadora.dataflow.testing.KafkaTestData;
 import org.fusadora.dataflow.testing.stubs.RecordingCheckpointService;
 import org.joda.time.Duration;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-public class SelectContiguousOffsetsWithGapEventsTransformTest {
+class SelectContiguousOffsetsWithGapEventsTransformTest {
 
-    @Rule
-    public final TestPipeline pipeline = TestPipeline.create();
+    private final Pipeline pipeline = Pipeline.create();
 
-    @Before
-    public void resetCheckpointStore() {
+    @BeforeEach
+    void resetCheckpointStore() {
         RecordingCheckpointService.reset();
     }
 
     @Test
-    public void emitsGapTimeoutSideOutputWhenMissingOffsetDoesNotArrive() {
+    void emitsGapTimeoutSideOutputWhenMissingOffsetDoesNotArrive() {
         RecordingCheckpointService.seed(Map.of("test_df:0", 0L));
         RecordingCheckpointService checkpointService = new RecordingCheckpointService();
 
@@ -59,7 +57,7 @@ public class SelectContiguousOffsetsWithGapEventsTransformTest {
     }
 
     @Test
-    public void doesNotEmitGapTimeoutSideOutputWhenGapResolvesBeforeTimeout() {
+    void doesNotEmitGapTimeoutSideOutputWhenGapResolvesBeforeTimeout() {
         RecordingCheckpointService.seed(Map.of("test_df:0", 0L));
         RecordingCheckpointService checkpointService = new RecordingCheckpointService();
 

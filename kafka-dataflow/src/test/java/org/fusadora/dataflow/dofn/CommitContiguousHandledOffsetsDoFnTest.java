@@ -1,34 +1,32 @@
 package org.fusadora.dataflow.dofn;
 
+import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.coders.KvCoder;
 import org.apache.beam.sdk.coders.StringUtf8Coder;
 import org.apache.beam.sdk.coders.VarLongCoder;
-import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.testing.TestStream;
 import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.values.KV;
 import org.fusadora.dataflow.testing.stubs.RecordingCheckpointService;
 import org.joda.time.Duration;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class CommitContiguousHandledOffsetsDoFnTest {
+class CommitContiguousHandledOffsetsDoFnTest {
 
-    @Rule
-    public final TestPipeline pipeline = TestPipeline.create();
+    private final Pipeline pipeline = Pipeline.create();
 
-    @Before
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         RecordingCheckpointService.reset();
     }
 
     @Test
-    public void commitsBufferedOffsetsOnceContiguousFrontierArrives() {
+    void commitsBufferedOffsetsOnceContiguousFrontierArrives() {
         RecordingCheckpointService.seed(Map.of("test_df:0", 0L));
         RecordingCheckpointService checkpointService = new RecordingCheckpointService();
 
@@ -48,7 +46,7 @@ public class CommitContiguousHandledOffsetsDoFnTest {
     }
 
     @Test
-    public void ignoresHandledOffsetsOlderThanCurrentCheckpoint() {
+    void ignoresHandledOffsetsOlderThanCurrentCheckpoint() {
         RecordingCheckpointService.seed(Map.of("test_df:0", 2L));
         RecordingCheckpointService checkpointService = new RecordingCheckpointService();
 

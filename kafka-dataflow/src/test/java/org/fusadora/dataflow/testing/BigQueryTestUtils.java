@@ -17,6 +17,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Stateless BigQuery-related fixtures used by tests.
@@ -72,6 +73,13 @@ public final class BigQueryTestUtils {
     }
 
     public static long parseOffset(TableRow row) {
+        Object metadataRecord = row.get(KafkaMetadataConstants.METADATA_RECORD_FIELD);
+        if (metadataRecord instanceof TableRow metadataTableRow) {
+            return Long.parseLong(metadataTableRow.get(KafkaMetadataConstants.META_KAFKA_OFFSET).toString());
+        }
+        if (metadataRecord instanceof Map<?, ?> metadataMap) {
+            return Long.parseLong(metadataMap.get(KafkaMetadataConstants.META_KAFKA_OFFSET).toString());
+        }
         return Long.parseLong(row.get(KafkaMetadataConstants.META_KAFKA_OFFSET).toString());
     }
 

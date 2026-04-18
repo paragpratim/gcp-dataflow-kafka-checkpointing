@@ -1,29 +1,27 @@
 package org.fusadora.dataflow.ptransform;
 
-import org.apache.beam.sdk.testing.TestPipeline;
+import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.transforms.Create;
 import org.apache.beam.sdk.values.KV;
 import org.fusadora.dataflow.testing.stubs.RecordingCheckpointService;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class CommitHandledOffsetsTransformTest {
+class CommitHandledOffsetsTransformTest {
 
-    @Rule
-    public final TestPipeline pipeline = TestPipeline.create();
+    private final Pipeline pipeline = Pipeline.create();
 
-    @Before
-    public void resetCheckpointStore() {
+    @BeforeEach
+    void resetCheckpointStore() {
         RecordingCheckpointService.reset();
     }
 
     @Test
-    public void commitsContiguousHandledOffsetsAcrossOutOfOrderInputs() {
+    void commitsContiguousHandledOffsetsAcrossOutOfOrderInputs() {
         RecordingCheckpointService.seed(Map.of("test_df:0", 0L));
         RecordingCheckpointService checkpointService = new RecordingCheckpointService();
 
