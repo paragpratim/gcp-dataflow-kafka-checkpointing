@@ -14,6 +14,7 @@ import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollection;
 import org.fusadora.dataflow.services.OutputService;
 import org.fusadora.dataflow.testing.BigQueryTestUtils;
+import org.fusadora.dataflow.common.KafkaMetadataConstants;
 import org.jspecify.annotations.NonNull;
 
 import java.io.InputStream;
@@ -60,10 +61,20 @@ public class TestOutputService implements OutputService, Serializable {
         capturedRows = input;
 
         PCollection<TableRow> successRows = input.apply(transformName + "-success-filter",
-                Filter.by(row -> row != null && !failingOffsets.contains(BigQueryTestUtils.parseOffset(row))));
+                Filter.by(row -> {
+                    if (row == null) return false;
+                    Object offsetObj = row.get(KafkaMetadataConstants.META_KAFKA_OFFSET);
+                    if (offsetObj == null) return true; // no metadata field: treat as success
+                    return !failingOffsets.contains(Long.parseLong(offsetObj.toString()));
+                }));
 
         PCollection<TableRow> failedRowValues = input.apply(transformName + "-failure-filter",
-                Filter.by(row -> row != null && failingOffsets.contains(BigQueryTestUtils.parseOffset(row))));
+                Filter.by(row -> {
+                    if (row == null) return false;
+                    Object offsetObj = row.get(KafkaMetadataConstants.META_KAFKA_OFFSET);
+                    if (offsetObj == null) return false; // no metadata field: treat as success
+                    return failingOffsets.contains(Long.parseLong(offsetObj.toString()));
+                }));
 
         PCollection<BigQueryStorageApiInsertError> failedRows = failedRowValues.apply(
                 transformName + "-to-errors", ParDo.of(new DoFn<TableRow, BigQueryStorageApiInsertError>() {

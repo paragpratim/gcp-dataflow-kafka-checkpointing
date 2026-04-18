@@ -26,6 +26,18 @@ public class MappingDoFnsTest {
     public final TestPipeline pipeline = TestPipeline.create();
 
     @Test
+    public void extractEnvelopeOffsetsMapsTopicPartitionAndOffset() {
+        PCollection<KV<String, Long>> offsets = pipeline
+                .apply(Create.of(KafkaTestData.envelope("test_df", 2, 7L, "payload")))
+                .apply(MapElements.via(new ExtractEnvelopeOffsetsFn()));
+
+        assertNotNull(offsets);
+        PAssert.that(offsets).containsInAnyOrder(List.of(KV.of("test_df:2", 7L)));
+
+        pipeline.run().waitUntilFinish();
+    }
+
+    @Test
     public void kafkaRecordToEnvelopeConvertsKafkaMetadataAndPayload() {
         PCollection<KafkaEventEnvelope> output = pipeline
                 .apply(Create.of(KafkaTestData.kafkaRecord("test_df", 2, 17L, "payload"))

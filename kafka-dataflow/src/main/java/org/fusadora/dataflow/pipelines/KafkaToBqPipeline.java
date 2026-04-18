@@ -1,6 +1,5 @@
 package org.fusadora.dataflow.pipelines;
 
-import com.google.api.services.bigquery.model.TableRow;
 import com.google.inject.Inject;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.io.gcp.bigquery.WriteResult;
@@ -15,9 +14,8 @@ import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionList;
 import org.apache.beam.sdk.values.PCollectionTuple;
 import org.fusadora.dataflow.dataflowoptions.DataflowOptions;
-import org.fusadora.dataflow.dofn.DropInvalidHandledRowsFn;
+import org.fusadora.dataflow.dofn.ExtractEnvelopeOffsetsFn;
 import org.fusadora.dataflow.dofn.ExtractFailedRowsDoFn;
-import org.fusadora.dataflow.dofn.ExtractHandledWriteOffsetsFn;
 import org.fusadora.dataflow.dto.KafkaEventEnvelope;
 import org.fusadora.dataflow.dto.TopicConfig;
 import org.fusadora.dataflow.ptransform.CommitHandledOffsetsTransform;
@@ -93,26 +91,19 @@ public class KafkaToBqPipeline extends BasePipeline {
                     .apply("Window Gap Timeout Offsets [" + topicConfig.getTopicName() + "]",
                             Window.into(FixedWindows.of(Duration.standardSeconds(WINDOW_SIZE_SECONDS))));
 
-            //Write to BigQuery
+            // Extract handled offsets directly from contiguous envelopes before the BQ write.
+            // BQ Storage Write API strips fields not in the table schema from returned rows during
+            // proto serialisation, so metadata fields cannot be recovered from write result rows.
+            PCollection<KV<String, Long>> handledOffsetsFromBq = contiguousKafkaMessage
+                    .apply("Extract Handled Offsets From Envelopes [" + topicConfig.getTopicName() + "]",
+                            MapElements.via(new ExtractEnvelopeOffsetsFn()));
+
+            //Write to BigQuery and log any failures for audit.
             WriteResult writeResult = contiguousKafkaMessage.apply("Write Raw Messages to BigQuery",
                     new WriteRawMessageTransform(getOutputService(), topicConfig));
-
-            //Success rows are handled offsets for checkpoint progression.
-            PCollection<TableRow> successRows = writeResult.getSuccessfulStorageApiInserts();
-
-            //Failure rows are also treated as handled offsets once captured here with explicit audit logging.
-            PCollection<TableRow> failedRows = writeResult.getFailedStorageApiInserts()
-                    .apply("Extract and Log BQ Storage API Failures [" + topicConfig.getTopicName() + "]",
+            writeResult.getFailedStorageApiInserts()
+                    .apply("Log BQ Storage API Failures [" + topicConfig.getTopicName() + "]",
                             ParDo.of(new ExtractFailedRowsDoFn(topicConfig.getTopicName())));
-
-            //Convert handled BQ rows into handled offsets.
-            PCollection<KV<String, Long>> handledOffsetsFromBq = PCollectionList.of(successRows)
-                    .and(failedRows)
-                    .apply("Merge Handled BQ Results [" + topicConfig.getTopicName() + "]", Flatten.pCollections())
-                    .apply("Extract handled write offsets [" + topicConfig.getTopicName() + "]",
-                            MapElements.via(new ExtractHandledWriteOffsetsFn()))
-                    .apply("Drop invalid handled rows [" + topicConfig.getTopicName() + "]",
-                            ParDo.of(new DropInvalidHandledRowsFn()));
 
             // Commit state is key+window scoped, so normalize both inputs to a single global window before merge.
             PCollection<KV<String, Long>> handledOffsetsFromBqGlobal = handledOffsetsFromBq
