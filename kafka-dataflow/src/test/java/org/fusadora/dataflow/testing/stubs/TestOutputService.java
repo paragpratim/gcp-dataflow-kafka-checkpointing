@@ -64,7 +64,7 @@ public class TestOutputService implements OutputService, Serializable {
                 Filter.by(row -> {
                     if (row == null) return false;
                     Object offsetObj = row.get(KafkaMetadataConstants.META_KAFKA_OFFSET);
-                    if (offsetObj == null) return true; // no metadata field: treat as success
+                    if (offsetObj == null) return true; // no metadata field: not a configured failure
                     return !failingOffsets.contains(Long.parseLong(offsetObj.toString()));
                 }));
 
@@ -72,7 +72,7 @@ public class TestOutputService implements OutputService, Serializable {
                 Filter.by(row -> {
                     if (row == null) return false;
                     Object offsetObj = row.get(KafkaMetadataConstants.META_KAFKA_OFFSET);
-                    if (offsetObj == null) return false; // no metadata field: treat as success
+                    if (offsetObj == null) return false; // no metadata field: not a configured failure
                     return failingOffsets.contains(Long.parseLong(offsetObj.toString()));
                 }));
 

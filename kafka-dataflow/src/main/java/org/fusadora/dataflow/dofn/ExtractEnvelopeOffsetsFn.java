@@ -17,10 +17,8 @@ import org.fusadora.dataflow.dto.KafkaEventEnvelope;
 @SuppressWarnings("unused") // Instantiated from pipeline transform wiring
 public class ExtractEnvelopeOffsetsFn extends SimpleFunction<KafkaEventEnvelope, KV<String, Long>> {
 
-    private static final String KEY_SEPARATOR = ":";
-
     @Override
     public KV<String, Long> apply(KafkaEventEnvelope envelope) {
-        return KV.of(envelope.getTopic() + KEY_SEPARATOR + envelope.getPartition(), envelope.getOffset());
+        return KV.of(envelope.getPartitionKey(), envelope.getOffset());
     }
 }
