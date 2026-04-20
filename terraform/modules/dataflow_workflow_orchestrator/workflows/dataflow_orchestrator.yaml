@@ -134,6 +134,7 @@ main:
                   assign:
                     - worker_zone_map:
                         workerZone: ${worker_zone}
+                        zone: ${worker_zone}
               - add_worker_zone_to_env:
                   assign:
                     - launch_env: ${map.merge(launch_env, worker_zone_map)}
