@@ -7,8 +7,10 @@ import org.apache.beam.sdk.io.gcp.bigquery.WriteResult;
 import org.apache.beam.sdk.transforms.Flatten;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.ParDo;
+import org.apache.beam.sdk.transforms.windowing.AfterProcessingTime;
 import org.apache.beam.sdk.transforms.windowing.FixedWindows;
 import org.apache.beam.sdk.transforms.windowing.GlobalWindows;
+import org.apache.beam.sdk.transforms.windowing.Repeatedly;
 import org.apache.beam.sdk.transforms.windowing.Window;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollection;
@@ -115,13 +117,23 @@ public class KafkaToBqPipeline extends BasePipeline {
                             ParDo.of(new DropInvalidHandledRowsFn()));
 
             // Commit state is key+window scoped, so normalize both inputs to a single global window before merge.
+            // A repeating processing-time trigger is used so panes fire on a schedule rather than waiting for
+            // end-of-time watermark — this enables clean drain and reduces Firestore write frequency.
+            Window<KV<String, Long>> globalCommitWindow = Window
+                    .<KV<String, Long>>into(new GlobalWindows())
+                    .triggering(Repeatedly.forever(
+                            AfterProcessingTime.pastFirstElementInPane()
+                                    .plusDelayOf(Duration.standardSeconds(WINDOW_SIZE_SECONDS))))
+                    .withAllowedLateness(Duration.ZERO)
+                    .discardingFiredPanes();
+
             PCollection<KV<String, Long>> handledOffsetsFromBqGlobal = handledOffsetsFromBq
                     .apply("Global Window Handled BQ Offsets [" + topicConfig.getTopicName() + "]",
-                            Window.into(new GlobalWindows()));
+                            globalCommitWindow);
 
             PCollection<KV<String, Long>> sourceGapTimeoutOffsetsGlobal = sourceGapTimeoutOffsets
                     .apply("Global Window Gap Timeout Offsets [" + topicConfig.getTopicName() + "]",
-                            Window.into(new GlobalWindows()));
+                            globalCommitWindow);
 
             //Merge source gap-timeout offsets with BQ handled offsets and commit from one stream.
             PCollectionList.of(handledOffsetsFromBqGlobal)
