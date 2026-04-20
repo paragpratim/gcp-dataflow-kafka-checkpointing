@@ -9,7 +9,7 @@ main:
           - project_id: ${map.get(args_map, "project_id")}
           - region: ${map.get(args_map, "region")}
           - job_name: ${text.to_lower(map.get(args_map, "job_name"))}
-          - worker_zone: ${default(map.get(args_map, "worker_zone"), default(map.get(args_map, "zone"), ""))}
+          - zone: ${default(map.get(args_map, "zone"), "")}
           - is_streaming: ${default(map.get(args_map, "is_streaming"), true)}
           - container_image: ${map.get(args_map, "container_image")}
           - launch_parameters: ${default(map.get(args_map, "parameters"), json.decode("{}"))}
@@ -126,17 +126,17 @@ main:
               ipConfiguration: ${ip_configuration}
               enableStreamingEngine: ${enable_streaming_engine}
 
-    - maybe_add_worker_zone:
+    - maybe_add_zone:
         switch:
-          - condition: ${worker_zone != null and worker_zone != ""}
+          - condition: ${zone != null and zone != ""}
             steps:
-              - build_worker_zone_map:
+              - build_zone_map:
                   assign:
-                    - worker_zone_map:
-                        zone: ${worker_zone}
-              - add_worker_zone_to_env:
+                    - zone_map:
+                        zone: ${zone}
+              - add_zone_to_env:
                   assign:
-                    - launch_env: ${map.merge(launch_env, worker_zone_map)}
+                    - launch_env: ${map.merge(launch_env, zone_map)}
 
     - launch_job:
         try:
@@ -165,7 +165,7 @@ main:
           status: "launched"
           action: ${action}
           job_name: ${job_name}
-          worker_zone: ${worker_zone}
+          zone: ${zone}
           is_streaming: ${is_streaming}
           response: ${launch_response}
 
