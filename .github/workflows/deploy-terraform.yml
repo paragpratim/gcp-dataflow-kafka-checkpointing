@@ -39,7 +39,7 @@ env:
   GITHUB_TOKEN: ${{ secrets.GH_PAT_TERRAFORM_TOKEN }}
   CONFLUENT_CLOUD_API_KEY: ${{ secrets.CONFLUENT_CLOUD_API_KEY }}
   CONFLUENT_CLOUD_API_SECRET: ${{ secrets.CONFLUENT_CLOUD_API_SECRET }}
-  TF_VAR_enable_confluent_cloud: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.enable_confluent_cloud || 'false' }}
+  TF_VAR_enable_confluent_cloud: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.enable_confluent_cloud || 'true' }}
 
 jobs:
   terraform:
