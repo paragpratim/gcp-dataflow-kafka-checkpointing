@@ -18,7 +18,7 @@ import java.util.Map;
  * @since 04/12/2025
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder({"topicName", "datasetName"})
+@JsonPropertyOrder({"topicName", "datasetName", "checkpointCommitIntervalSeconds"})
 public class TopicConfig extends BaseDto {
 
     @Serial
@@ -32,6 +32,8 @@ public class TopicConfig extends BaseDto {
     private String topicName;
     @JsonProperty("datasetName")
     private String datasetName;
+    @JsonProperty("checkpointCommitIntervalSeconds")
+    private Long checkpointCommitIntervalSeconds;
 
     public TopicConfig() {
         super();
@@ -59,6 +61,14 @@ public class TopicConfig extends BaseDto {
     @JsonProperty("datasetName")
     public void setDatasetName(String datasetName) { this.datasetName = datasetName; }
 
+    @JsonProperty("checkpointCommitIntervalSeconds")
+    public Long getCheckpointCommitIntervalSeconds() { return checkpointCommitIntervalSeconds; }
+
+    @JsonProperty("checkpointCommitIntervalSeconds")
+    public void setCheckpointCommitIntervalSeconds(Long checkpointCommitIntervalSeconds) {
+        this.checkpointCommitIntervalSeconds = checkpointCommitIntervalSeconds;
+    }
+
     @JsonAnyGetter
     public Map<String, Object> getAdditionalProperties() { return this.additionalProperties; }
 
@@ -71,11 +81,12 @@ public class TopicConfig extends BaseDto {
         if (!(o instanceof TopicConfig that)) return false;
         return Objects.equal(additionalProperties, that.additionalProperties)
                 && Objects.equal(topicName, that.topicName)
-                && Objects.equal(datasetName, that.datasetName);
+                && Objects.equal(datasetName, that.datasetName)
+                && Objects.equal(checkpointCommitIntervalSeconds, that.checkpointCommitIntervalSeconds);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(additionalProperties, topicName, datasetName);
+        return Objects.hashCode(additionalProperties, topicName, datasetName, checkpointCommitIntervalSeconds);
     }
 }

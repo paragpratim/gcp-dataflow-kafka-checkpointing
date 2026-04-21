@@ -23,16 +23,21 @@ public class CommitHandledOffsetsTransform extends PTransform<@NotNull PCollecti
 
     private final CheckpointService checkpointService;
     private final String jobId;
+    private final long commitIntervalSeconds;
 
-    public CommitHandledOffsetsTransform(CheckpointService checkpointService, String jobId) {
+    public CommitHandledOffsetsTransform(CheckpointService checkpointService, String jobId, long commitIntervalSeconds) {
         this.checkpointService = Objects.requireNonNull(checkpointService, "checkpointService must not be null");
         this.jobId = Objects.requireNonNull(jobId, "jobId must not be null");
+        if (commitIntervalSeconds <= 0) {
+            throw new IllegalArgumentException("commitIntervalSeconds must be > 0");
+        }
+        this.commitIntervalSeconds = commitIntervalSeconds;
     }
 
     @Override
     public @NotNull PDone expand(PCollection<KV<String, Long>> input) {
         input.apply("Commit contiguous handled offsets",
-                ParDo.of(new CommitContiguousHandledOffsetsDoFn(checkpointService, jobId)));
+                ParDo.of(new CommitContiguousHandledOffsetsDoFn(checkpointService, jobId, commitIntervalSeconds)));
         return PDone.in(input.getPipeline());
     }
 }

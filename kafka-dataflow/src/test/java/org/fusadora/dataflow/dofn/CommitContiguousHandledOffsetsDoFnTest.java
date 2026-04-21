@@ -34,15 +34,17 @@ class CommitContiguousHandledOffsetsDoFnTest {
                 .addElements(KV.of("test_df:0", 1L))
                 .advanceProcessingTime(Duration.standardSeconds(1))
                 .addElements(KV.of("test_df:0", 0L), KV.of("test_df:0", 2L))
+                .advanceProcessingTime(Duration.standardSeconds(2))
                 .advanceWatermarkToInfinity();
 
         pipeline.apply(stream)
-                .apply(ParDo.of(new CommitContiguousHandledOffsetsDoFn(checkpointService, "job-1")));
+                .apply(ParDo.of(new CommitContiguousHandledOffsetsDoFn(checkpointService, "job-1", 1L)));
 
         pipeline.run().waitUntilFinish();
 
         assertEquals(3L, RecordingCheckpointService.nextOffset("test_df", 0));
-        assertEquals(2L, RecordingCheckpointService.updates().get(1).lastAckedOffset());
+        assertEquals(2L,
+                RecordingCheckpointService.updates().get(RecordingCheckpointService.updates().size() - 1).lastAckedOffset());
     }
 
     @Test
@@ -52,8 +54,9 @@ class CommitContiguousHandledOffsetsDoFnTest {
 
         pipeline.apply(TestStream.create(KvCoder.of(StringUtf8Coder.of(), VarLongCoder.of()))
                         .addElements(KV.of("test_df:0", 0L), KV.of("test_df:0", 1L), KV.of("test_df:0", 2L))
+                        .advanceProcessingTime(Duration.standardSeconds(2))
                         .advanceWatermarkToInfinity())
-                .apply(ParDo.of(new CommitContiguousHandledOffsetsDoFn(checkpointService, "job-2")));
+                .apply(ParDo.of(new CommitContiguousHandledOffsetsDoFn(checkpointService, "job-2", 1L)));
 
         pipeline.run().waitUntilFinish();
 

@@ -2,7 +2,8 @@
   "topicConfigs": [
     {
       "topicName": "test_df",
-      "datasetName": "test_topic"
+      "datasetName": "test_topic",
+      "checkpointCommitIntervalSeconds": 60
     }
   ]
 }

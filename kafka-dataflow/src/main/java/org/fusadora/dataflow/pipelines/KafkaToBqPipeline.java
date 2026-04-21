@@ -52,6 +52,7 @@ public class KafkaToBqPipeline extends BasePipeline {
     private static final Logger LOG = LoggerFactory.getLogger(KafkaToBqPipeline.class);
     private static final long WINDOW_SIZE_SECONDS = 10L;
     private static final long DEFAULT_GAP_TIMEOUT_SECONDS = 300L;
+    private static final long DEFAULT_CHECKPOINT_COMMIT_INTERVAL_SECONDS = 60L;
 
     @Inject
     public KafkaToBqPipeline(InputService aInputService, OutputService aOutputService,
@@ -64,12 +65,22 @@ public class KafkaToBqPipeline extends BasePipeline {
         final String jobId = pipelineOptions.getJobName();
         final String brokerHost = PropertyUtils.getProperty(PropertyUtils.KAFKA_BROKER_HOST);
         final long gapTimeoutSeconds = parseLongOrDefault(
-                PropertyUtils.getProperty(PropertyUtils.OFFSET_GAP_TIMEOUT_SECONDS)
+                PropertyUtils.getProperty(PropertyUtils.OFFSET_GAP_TIMEOUT_SECONDS),
+                DEFAULT_GAP_TIMEOUT_SECONDS,
+                PropertyUtils.OFFSET_GAP_TIMEOUT_SECONDS
+        );
+        final long checkpointCommitIntervalSeconds = parseLongOrDefault(
+                PropertyUtils.getProperty(PropertyUtils.CHECKPOINT_COMMIT_INTERVAL_SECONDS),
+                DEFAULT_CHECKPOINT_COMMIT_INTERVAL_SECONDS,
+                PropertyUtils.CHECKPOINT_COMMIT_INTERVAL_SECONDS
         );
         final boolean gapAuditEnabled = Boolean.parseBoolean(
                 PropertyUtils.getProperty(PropertyUtils.OFFSET_GAP_AUDIT_ENABLED));
 
         for (TopicConfig topicConfig : Objects.requireNonNull(TopicConfigLoader.readConfig()).getTopicConfigList()) {
+            final long topicCheckpointCommitIntervalSeconds = resolveCheckpointCommitIntervalSeconds(
+                    topicConfig, checkpointCommitIntervalSeconds);
+
             //Bootstrap offsets from checkpoint for the topic
             getInputService().bootstrapOffsetsFromCheckpoint(brokerHost, topicConfig.getTopicName());
 
@@ -140,20 +151,33 @@ public class KafkaToBqPipeline extends BasePipeline {
                     .and(sourceGapTimeoutOffsetsGlobal)
                     .apply("Merge All Handled Offsets [" + topicConfig.getTopicName() + "]", Flatten.pCollections())
                     .apply("Commit Offsets From Handled Stream [" + topicConfig.getTopicName() + "]",
-                            new CommitHandledOffsetsTransform(getCheckpointService(), jobId));
+                            new CommitHandledOffsetsTransform(getCheckpointService(), jobId,
+                                    topicCheckpointCommitIntervalSeconds));
 
         }
 
         pipeline.run();
     }
 
-    private long parseLongOrDefault(String value) {
+    private long parseLongOrDefault(String value, long defaultValue, String propertyName) {
         try {
             return Long.parseLong(value);
         } catch (NumberFormatException nfe) {
-            LOG.warn("Invalid numeric config value [{}], falling back to {}", value, KafkaToBqPipeline.DEFAULT_GAP_TIMEOUT_SECONDS);
-            return KafkaToBqPipeline.DEFAULT_GAP_TIMEOUT_SECONDS;
+            LOG.warn("Invalid numeric config for [{}] value [{}], falling back to {}",
+                    propertyName, value, defaultValue);
+            return defaultValue;
         }
+    }
+
+    static long resolveCheckpointCommitIntervalSeconds(TopicConfig topicConfig, long defaultIntervalSeconds) {
+        if (topicConfig == null) {
+            return defaultIntervalSeconds;
+        }
+        Long topicCommitIntervalSeconds = topicConfig.getCheckpointCommitIntervalSeconds();
+        if (topicCommitIntervalSeconds == null || topicCommitIntervalSeconds <= 0) {
+            return defaultIntervalSeconds;
+        }
+        return topicCommitIntervalSeconds;
     }
 
 }
