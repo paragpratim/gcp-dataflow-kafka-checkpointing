@@ -7,11 +7,7 @@ import org.apache.beam.sdk.io.gcp.bigquery.WriteResult;
 import org.apache.beam.sdk.transforms.Flatten;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.ParDo;
-import org.apache.beam.sdk.transforms.windowing.AfterProcessingTime;
-import org.apache.beam.sdk.transforms.windowing.FixedWindows;
-import org.apache.beam.sdk.transforms.windowing.GlobalWindows;
-import org.apache.beam.sdk.transforms.windowing.Repeatedly;
-import org.apache.beam.sdk.transforms.windowing.Window;
+import org.apache.beam.sdk.transforms.windowing.*;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionList;
@@ -60,6 +56,17 @@ public class KafkaToBqPipeline extends BasePipeline {
         super(aInputService, aOutputService, checkpointService);
     }
 
+    static long resolveCheckpointCommitIntervalSeconds(TopicConfig topicConfig, long defaultIntervalSeconds) {
+        if (topicConfig == null) {
+            return defaultIntervalSeconds;
+        }
+        Long topicCommitIntervalSeconds = topicConfig.getCheckpointCommitIntervalSeconds();
+        if (topicCommitIntervalSeconds == null || topicCommitIntervalSeconds <= 0) {
+            return defaultIntervalSeconds;
+        }
+        return topicCommitIntervalSeconds;
+    }
+
     @Override
     void run(Pipeline pipeline, DataflowOptions pipelineOptions) {
         final String jobId = pipelineOptions.getJobName();
@@ -82,7 +89,7 @@ public class KafkaToBqPipeline extends BasePipeline {
                     topicConfig, checkpointCommitIntervalSeconds);
 
             //Bootstrap offsets from checkpoint for the topic
-            getInputService().bootstrapOffsetsFromCheckpoint(brokerHost, topicConfig.getTopicName());
+            getInputService().bootstrapOffsetsFromCheckpoint(brokerHost, Objects.requireNonNull(topicConfig).getTopicName());
 
             //Read from Kafka and convert to KafkaEventEnvelope
             PCollection<KafkaEventEnvelope> kafkaMessage = pipeline.apply("Read from Kafka [" + topicConfig.getTopicName() + "]"
@@ -167,17 +174,6 @@ public class KafkaToBqPipeline extends BasePipeline {
                     propertyName, value, defaultValue);
             return defaultValue;
         }
-    }
-
-    static long resolveCheckpointCommitIntervalSeconds(TopicConfig topicConfig, long defaultIntervalSeconds) {
-        if (topicConfig == null) {
-            return defaultIntervalSeconds;
-        }
-        Long topicCommitIntervalSeconds = topicConfig.getCheckpointCommitIntervalSeconds();
-        if (topicCommitIntervalSeconds == null || topicCommitIntervalSeconds <= 0) {
-            return defaultIntervalSeconds;
-        }
-        return topicCommitIntervalSeconds;
     }
 
 }
