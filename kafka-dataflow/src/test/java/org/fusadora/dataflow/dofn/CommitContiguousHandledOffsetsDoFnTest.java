@@ -43,6 +43,7 @@ class CommitContiguousHandledOffsetsDoFnTest {
         pipeline.run().waitUntilFinish();
 
         assertEquals(3L, RecordingCheckpointService.nextOffset("test_df", 0));
+        assertEquals(1, RecordingCheckpointService.updates().size());
         assertEquals(2L,
                 RecordingCheckpointService.updates().get(RecordingCheckpointService.updates().size() - 1).lastAckedOffset());
     }

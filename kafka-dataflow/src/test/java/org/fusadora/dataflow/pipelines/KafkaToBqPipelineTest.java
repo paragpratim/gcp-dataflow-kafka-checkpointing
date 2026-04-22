@@ -75,6 +75,7 @@ class KafkaToBqPipelineTest {
                                 KafkaTestData.kafkaRecord("test_df", 0, 0L, "a"),
                                 KafkaTestData.kafkaRecord("test_df", 0, 2L, "c"))
                         .advanceProcessingTime(Duration.standardMinutes(7))
+                        .advanceProcessingTime(Duration.standardMinutes(2))
                         .advanceWatermarkToInfinity());
         TestOutputService.setFailingOffsets(Set.of());
         RecordingCheckpointService.seed(Map.of("test_df:0", 0L));
@@ -92,6 +93,7 @@ class KafkaToBqPipelineTest {
                                 KafkaTestData.kafkaRecord("test_df", 0, 0L, "a"),
                                 KafkaTestData.kafkaRecord("test_df", 0, 2L, "c"))
                         .advanceProcessingTime(Duration.standardMinutes(7))
+                        .advanceProcessingTime(Duration.standardMinutes(2))
                         .advanceWatermarkToInfinity());
         // Offset 2 is treated as handled via failed-write path, while gap-timeout path emits missing offset 1.
         TestOutputService.setFailingOffsets(Set.of(2L));

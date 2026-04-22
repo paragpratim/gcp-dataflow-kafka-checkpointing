@@ -131,10 +131,7 @@ public class CommitContiguousHandledOffsetsDoFn extends DoFn<KV<String, Long>, V
                 pendingAckOffsetState.write(lastAckedOffset);
             }
 
-            if (context.pane().isLast()) {
-                commitPendingOffset(partitionRef, pendingAckOffsetState);
-                timerArmedState.clear();
-            } else if (timerArmedState.read() == null) {
+            if (timerArmedState.read() == null) {
                 commitTimer.offset(org.joda.time.Duration.standardSeconds(commitIntervalSeconds)).setRelative();
                 timerArmedState.write(1L);
             }
