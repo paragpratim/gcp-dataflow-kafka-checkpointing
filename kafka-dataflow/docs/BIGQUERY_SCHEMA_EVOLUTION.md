@@ -116,7 +116,7 @@ bq rm -t dataset_name.KAFKA_RAW_MESSAGE
 ### Option 3: Use a New Table Name
 Deploy to a new table instead of modifying existing one:
 
-1. Update `WriteRawMessageTransform.BQ_TABLE_RAW_MESSAGE` to `"KAFKA_RAW_MESSAGE_V2"`
+1. Update `tableName` in `src/main/resources/topic-config.json` for the topic to a new value (for example `kafka_raw_message_test_df_v2`)
 2. Deploy pipeline (creates fresh table with new schema)
 3. Migrate data if needed using BigQuery INSERT SELECT queries
 

@@ -1,96 +1,141 @@
 # Kafka -> BigQuery Checkpointing Design (Current)
 
-## Goal
-- At-least-once processing (duplicates allowed, no silent loss).
-- External checkpoint authority in Firestore (one latest checkpoint per `topic:partition`).
-- Keep pipeline live under source gaps via explicit timeout policy.
+## Goals
+
+- At-least-once processing (duplicates are acceptable; silent loss is not).
+- External checkpoint authority per `topic:partition` in Firestore.
+- Liveness under source gaps and invalid payload drops.
+- Predictable drain behavior with unbounded Kafka input.
+
+## Diagram
+
+- Current flow diagram (Mermaid): `docs/checkpoint-processing.md`
+- Legacy editable diagram: `docs/checkpoint-processing.excalidraw`
+- Legacy preview: `docs/checkpoint-processing.svg`
 
 ## Current Flow (Implemented)
-
-## Diagram (Excalidraw)
-- File: `docs/checkpoint-processing.excalidraw`
-- Quick preview: `docs/checkpoint-processing.svg`
-- Focus areas:
-  - handled-offset derivation from BigQuery WriteResult (success + failure)
-  - merge with gap-timeout offsets before commit
-  - GlobalWindows commit frontier behavior
-  - Firestore checkpoint monotonic update (`nextOffsetToRead`)
-  - restart bootstrap path from Firestore checkpoint to Kafka consumer-group offsets
 
 ```text
 Kafka -> KafkaToMessageTransform (KafkaRecord -> KafkaEventEnvelope)
       -> SelectContiguousOffsetsWithGapEventsTransform
            - main output: contiguous envelopes
-           - side output: gap-timeout offsets (missing source offsets after timeout)
-      -> Window(Fixed 10s) on main output
-      -> WriteRawMessageTransform (BigQueryIO)
+           - side output: gap-timeout handled offsets
+      -> Window(Fixed 10s) on contiguous envelopes
+      -> FilterValidPayloadDoFn
+           - main output: valid envelopes for BigQuery
+           - side output: dropped-invalid handled offsets
+      -> WriteRawMessageTransform (pure map+write)
            - success rows
            - failed rows (captured + logged)
       -> ExtractHandledWriteOffsetsFn + DropInvalidHandledRowsFn
            => handled offsets from BQ results
 
-Merge:
+Merge handled-offset streams:
   handled offsets from BQ (success + failed rows)
-  + gap-timeout offsets from source stage
+  + gap-timeout handled offsets
+  + dropped-invalid handled offsets
   -> Flatten
-  -> Window.into(GlobalWindows())   # critical: single state scope for commits
+  -> GlobalWindows + repeating processing-time trigger
   -> CommitHandledOffsetsTransform
        -> CommitContiguousHandledOffsetsDoFn
        -> CheckpointService.updateOffsetCheckpoint(...)
 ```
 
 ## Why GlobalWindows Before Commit
-Beam state is scoped by **key + window**. If handled offsets are committed from separate windows, contiguous progression can split and stall.
 
-Using `GlobalWindows` before `CommitHandledOffsetsTransform` ensures each `topic:partition` has one contiguous commit state timeline.
+Beam state is scoped by **key + window**. Commit state must remain single-scope per key; otherwise contiguous frontier can split and stall across windows.
 
-## Checkpoint Store Semantics (Firestore)
-- Document id: `topic:partition`.
-- Fields: `topic`, `partition`, `nextOffsetToRead`, `lastAckedOffset`, `updatedAt`, `updatedByJobId`.
-- No history table by default (latest checkpoint only).
-- Update is monotonic and transactional: never move checkpoint backward.
+The commit stage uses:
 
-## Top-Level DoFn Ownership
-- Source gap/contiguous logic: `GapAwareOffsetDoFn`
-- Kafka mapping: `KafkaRecordToEnvelopeDoFn`
-- BQ row mapping: `KafkaEnvelopeToTableRowDoFn`
-- BQ failure extraction: `ExtractFailedRowsDoFn`
-- Handled offset extraction/filter: `ExtractHandledWriteOffsetsFn`, `DropInvalidHandledRowsFn`
-- Commit frontier: `CommitContiguousHandledOffsetsDoFn`
+- `GlobalWindows`
+- repeating processing-time trigger
+- `discardingFiredPanes()`
+
+This keeps state unified and enables clean drain on unbounded sources.
+
+## Checkpoint Commit Behavior
+
+### Commit frontier and batching
+
+- `CommitContiguousHandledOffsetsDoFn` tracks contiguous expected offset in keyed state.
+- Out-of-order handled offsets are buffered until the frontier can advance.
+- Firestore writes are timer-batched using `checkpointCommitIntervalSeconds`.
+
+### Firestore update semantics
+
+- Firestore document id: `topic:partition`
+- Fields: `topic`, `partition`, `nextOffsetToRead`, `lastAckedOffset`, `updatedAt`, `updatedByJobId`
+- Writes are async (`set(..., merge)`) to reduce worker blocking.
+- Forward-only progression is enforced by Beam keyed state (monotonic frontier per key).
+
+## Topic-Level Configuration
+
+Each topic config supports:
+
+- `topicName`
+- `datasetName`
+- `tableName` (optional; fallback: `KAFKA_RAW_MESSAGE`)
+- `checkpointCommitIntervalSeconds` (optional override)
+
+This allows per-topic BQ destination and per-topic checkpoint cadence.
+
+## Startup Offset Loading
+
+At pipeline setup, checkpoint offsets are loaded once per topic via `getTopicPartitionOffsets(topic)` and passed into gap/commit transforms as initial partition offsets. Missing partitions still fallback to on-demand lookup.
+
+## Observability (Commit Stage)
+
+Key metrics for `Commit Offsets From Handled Stream [topic]`:
+
+- Throughput/progress: `handled_offsets_seen`, `offsets_contiguously_acked`, `contiguous_advance_size`
+- Stall indicators: `no_progress_buffered`, `buffered_state_size`
+- Timer behavior: `commit_timer_armed`, `commit_timer_fired`, `commit_timer_fired_without_pending_ack`
+- Commit behavior: `checkpoint_commit_attempted`, `checkpoint_service_call_latency_ms`
+- Firestore service metrics: `firestore_checkpoint_update_requested`, `firestore_checkpoint_update_dispatch_latency_ms`, `firestore_checkpoint_update_success`, `firestore_checkpoint_update_failure`
 
 ## Expected Behavior Examples
 
 ### 1) Normal success path
-Input offsets for `test_df:0`: `0,1,2` (all BQ success)
-- Commit frontier advances to `2`
+
+Offsets for `test_df:0`: `0,1,2` (BQ success)
+
+- Frontier advances to `2`
 - Firestore stores `nextOffsetToRead=3`
 
-### 2) BQ partial failure but durable handling
-Input offsets: `0,1,2`, BQ row for `1` fails
-- `0,2` from success + `1` from failed-row handled stream
-- Merged handled offsets become contiguous `0,1,2`
+### 2) BQ failure path remains handled
+
+Offsets: `0,1,2`, BQ write for `1` fails
+
+- Success path yields `0,2`, failed-row path yields `1`
+- Merged handled stream becomes contiguous `0,1,2`
 - Firestore stores `nextOffsetToRead=3`
 
-### 3) Source gap timeout
-Input observed: `0,2` (missing `1`), timeout reached
-- `GapAwareOffsetDoFn` emits gap-timeout handled offset `1`
-- Commit stream gets `0,1,2` after merge
+### 3) Source gap timeout path remains handled
+
+Observed source offsets: `0,2` (missing `1`)
+
+- Gap timeout emits handled offset `1`
+- Commit stream gets `0,1,2`
 - Firestore stores `nextOffsetToRead=3`
 
-### 4) Out-of-order handled arrival
-Handled stream arrives as: `3,1,2` with expected `1`
-- Commit DoFn buffers until contiguous
-- Commits only when frontier is contiguous
-- No backward or skipping commit without explicit handling event
+### 4) Invalid payload drop path remains handled
+
+Observed contiguous offsets: `0,1,2`, where `1` contains invalid payload keyword
+
+- Filter drops payload `1` before BQ write
+- Side output emits handled offset `1`
+- Commit stream still receives `0,1,2`
+- Firestore stores `nextOffsetToRead=3`
 
 ## Operational Notes
-- If BigQuery succeeds but checkpoint update fails, replay can happen on restart (duplicates expected).
-- Gap-timeout events are explicit policy decisions; they should be auditable.
-- This design intentionally favors liveness with explicit, observable tradeoffs.
+
+- If BigQuery succeeds but checkpoint write fails, restart replay can happen (duplicates expected).
+- Gap timeout and dropped-invalid offsets are explicit policy decisions and should be monitored.
+- Key parallelism in commit stage is bounded by active `topic:partition` keys; adding Kafka partitions increases available parallel lanes.
 
 ## Contributor Guidance
-- For all new Beam/Dataflow changes, follow the architecture and coding conventions in `.github/copilot-instructions.md`.
+
+- Follow `.github/copilot-instructions.md` for coding and architecture conventions.
 - Keep package boundaries strict (`pipelines`, `ptransform`, `dofn`, `core`, `services`, `dto`, `common`, `di`).
-- Do not introduce `dofn -> ptransform` dependencies; shared logic belongs in `core` and constants in `common`.
-- Keep DTOs pure data holders; config/resource loading belongs in `utilities`.
+- Keep shared state logic in `core`; keep DTOs as pure data holders.
 
