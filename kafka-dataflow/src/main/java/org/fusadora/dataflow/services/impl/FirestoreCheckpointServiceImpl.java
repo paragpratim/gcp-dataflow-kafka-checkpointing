@@ -5,6 +5,9 @@ import com.google.api.core.ApiFutureCallback;
 import com.google.api.core.ApiFutures;
 import com.google.cloud.firestore.*;
 import com.google.common.util.concurrent.MoreExecutors;
+import org.apache.beam.sdk.metrics.Counter;
+import org.apache.beam.sdk.metrics.Distribution;
+import org.apache.beam.sdk.metrics.Metrics;
 import org.apache.commons.lang3.StringUtils;
 import org.fusadora.dataflow.dto.KafkaOffsetCheckpoint;
 import org.fusadora.dataflow.exception.DataFlowException;
@@ -32,6 +35,14 @@ import static org.fusadora.dataflow.common.Constants.CHECKPOINT_DOCUMENT_TOPIC;
 public class FirestoreCheckpointServiceImpl implements CheckpointService {
 
     private static final Logger LOG = LoggerFactory.getLogger(FirestoreCheckpointServiceImpl.class);
+    private static final Counter CHECKPOINT_UPDATE_REQUESTED = Metrics.counter(FirestoreCheckpointServiceImpl.class,
+            "firestore_checkpoint_update_requested");
+    private static final Counter CHECKPOINT_UPDATE_SUCCESS = Metrics.counter(FirestoreCheckpointServiceImpl.class,
+            "firestore_checkpoint_update_success");
+    private static final Counter CHECKPOINT_UPDATE_FAILURE = Metrics.counter(FirestoreCheckpointServiceImpl.class,
+            "firestore_checkpoint_update_failure");
+    private static final Distribution CHECKPOINT_UPDATE_DISPATCH_LATENCY_MS = Metrics.distribution(
+            FirestoreCheckpointServiceImpl.class, "firestore_checkpoint_update_dispatch_latency_ms");
 
     @Serial
     private static final long serialVersionUID = 1L;
@@ -148,6 +159,9 @@ public class FirestoreCheckpointServiceImpl implements CheckpointService {
      */
     @Override
     public void updateOffsetCheckpoint(String topic, int partition, long lastAckedOffset, String jobId) {
+        CHECKPOINT_UPDATE_REQUESTED.inc();
+        long startNanos = System.nanoTime();
+
         KafkaOffsetCheckpoint updated = new KafkaOffsetCheckpoint();
         updated.setTopic(topic);
         updated.setPartition(partition);
@@ -158,15 +172,18 @@ public class FirestoreCheckpointServiceImpl implements CheckpointService {
 
         DocumentReference docRef = checkpoints().document(getDocId(topic, partition));
         ApiFuture<WriteResult> future = docRef.set(updated.toMap(), SetOptions.merge());
+        CHECKPOINT_UPDATE_DISPATCH_LATENCY_MS.update((System.nanoTime() - startNanos) / 1_000_000L);
         ApiFutures.addCallback(future, new ApiFutureCallback<>() {
             @Override
             public void onSuccess(WriteResult result) {
+                CHECKPOINT_UPDATE_SUCCESS.inc();
                 LOG.debug("Checkpoint async write succeeded for {}:{} nextOffset={}",
                         topic, partition, lastAckedOffset + 1);
             }
 
             @Override
             public void onFailure(Throwable t) {
+                CHECKPOINT_UPDATE_FAILURE.inc();
                 LOG.error("Checkpoint async write FAILED for {}:{} lastAckedOffset={} — will retry on next timer cycle",
                         topic, partition, lastAckedOffset, t);
             }

@@ -5,7 +5,6 @@ import org.apache.beam.sdk.state.ValueState;
 
 import java.io.Serial;
 import java.io.Serializable;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -68,13 +67,11 @@ public final class ContiguousOffsetStateCore<T> implements Serializable {
      */
     public long emitContiguous(long expectedOffset, MapState<Long, T> bufferedState, Consumer<T> emitter) {
         long current = expectedOffset;
-        Map<Long, T> bufferedSnapshot = new HashMap<>();
-        for (Map.Entry<Long, T> entry : bufferedState.entries().read()) {
-            bufferedSnapshot.put(entry.getKey(), entry.getValue());
-        }
-
-        while (bufferedSnapshot.containsKey(current)) {
-            T event = bufferedSnapshot.get(current);
+        while (true) {
+            T event = bufferedState.get(current).read();
+            if (event == null) {
+                break;
+            }
             emitter.accept(event);
             bufferedState.remove(current);
             current++;
@@ -91,6 +88,21 @@ public final class ContiguousOffsetStateCore<T> implements Serializable {
     public boolean hasBufferedEvents(MapState<Long, T> bufferedState) {
         Iterator<Map.Entry<Long, T>> iter = bufferedState.entries().read().iterator();
         return iter.hasNext();
+    }
+
+    /**
+     * Counts the number of buffered events in the state. This iterates the full map and should only be
+     * called for diagnostic/metrics sampling, not on every hot-path element.
+     *
+     * @param bufferedState The MapState containing the buffered events.
+     * @return The number of entries currently in the buffer.
+     */
+    public long countBufferedEvents(MapState<Long, T> bufferedState) {
+        long count = 0L;
+        for (Map.Entry<Long, T> ignored : bufferedState.entries().read()) {
+            count++;
+        }
+        return count;
     }
 
     /**

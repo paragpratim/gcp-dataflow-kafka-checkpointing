@@ -1,6 +1,9 @@
 package org.fusadora.dataflow.dofn;
 
 import org.apache.beam.sdk.coders.VarLongCoder;
+import org.apache.beam.sdk.metrics.Counter;
+import org.apache.beam.sdk.metrics.Distribution;
+import org.apache.beam.sdk.metrics.Metrics;
 import org.apache.beam.sdk.state.MapState;
 import org.apache.beam.sdk.state.StateSpec;
 import org.apache.beam.sdk.state.StateSpecs;
@@ -16,6 +19,7 @@ import org.fusadora.dataflow.services.CheckpointService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -44,7 +48,36 @@ public class CommitContiguousHandledOffsetsDoFn extends DoFn<KV<String, Long>, V
     private final CheckpointService checkpointService;
     private final String jobId;
     private final long commitIntervalSeconds;
+    private final Map<Integer, Long> initialOffsetsByPartition;
     private final ContiguousOffsetStateCore<Long> offsetCore = new ContiguousOffsetStateCore<>();
+    private final Counter handledOffsetsSeen = Metrics.counter(CommitContiguousHandledOffsetsDoFn.class,
+            "handled_offsets_seen");
+    private final Counter invalidPartitionKeysDropped = Metrics.counter(CommitContiguousHandledOffsetsDoFn.class,
+            "invalid_partition_keys_dropped");
+    private final Counter staleOffsetsIgnored = Metrics.counter(CommitContiguousHandledOffsetsDoFn.class,
+            "stale_offsets_ignored");
+    private final Counter noProgressBuffered = Metrics.counter(CommitContiguousHandledOffsetsDoFn.class,
+            "no_progress_buffered");
+    private final Counter pendingAckUpdated = Metrics.counter(CommitContiguousHandledOffsetsDoFn.class,
+            "pending_ack_updated");
+    private final Counter commitTimerArmed = Metrics.counter(CommitContiguousHandledOffsetsDoFn.class,
+            "commit_timer_armed");
+    private final Counter commitTimerFired = Metrics.counter(CommitContiguousHandledOffsetsDoFn.class,
+            "commit_timer_fired");
+    private final Counter commitTimerFiredWithoutPendingAck = Metrics.counter(CommitContiguousHandledOffsetsDoFn.class,
+            "commit_timer_fired_without_pending_ack");
+    private final Counter checkpointCommitAttempted = Metrics.counter(CommitContiguousHandledOffsetsDoFn.class,
+            "checkpoint_commit_attempted");
+    private final Counter offsetsContiguouslyAcked = Metrics.counter(CommitContiguousHandledOffsetsDoFn.class,
+            "offsets_contiguously_acked");
+    private final Distribution contiguousAdvanceSize = Metrics.distribution(CommitContiguousHandledOffsetsDoFn.class,
+            "contiguous_advance_size");
+    private final Distribution processElementLatencyMs = Metrics.distribution(CommitContiguousHandledOffsetsDoFn.class,
+            "process_element_latency_ms");
+    private final Distribution checkpointServiceCallLatencyMs = Metrics.distribution(CommitContiguousHandledOffsetsDoFn.class,
+            "checkpoint_service_call_latency_ms");
+    private final Distribution bufferedStateSize = Metrics.distribution(CommitContiguousHandledOffsetsDoFn.class,
+            "buffered_state_size");
 
     @DoFn.StateId(STATE_EXPECTED)
     @SuppressWarnings("unused") // Referenced by Beam runtime via @StateId
@@ -69,12 +102,21 @@ public class CommitContiguousHandledOffsetsDoFn extends DoFn<KV<String, Long>, V
     @SuppressWarnings("unused") // Instantiated from pipeline transform wiring
     public CommitContiguousHandledOffsetsDoFn(CheckpointService checkpointService, String jobId,
                                               long commitIntervalSeconds) {
+        this(checkpointService, jobId, commitIntervalSeconds, Map.of());
+    }
+
+    @SuppressWarnings("unused") // Instantiated from pipeline transform wiring
+    public CommitContiguousHandledOffsetsDoFn(CheckpointService checkpointService, String jobId,
+                                              long commitIntervalSeconds,
+                                              Map<Integer, Long> initialOffsetsByPartition) {
         this.checkpointService = Objects.requireNonNull(checkpointService, "checkpointService must not be null");
         this.jobId = Objects.requireNonNull(jobId, "jobId must not be null");
         if (commitIntervalSeconds <= 0) {
             throw new IllegalArgumentException("commitIntervalSeconds must be > 0");
         }
         this.commitIntervalSeconds = commitIntervalSeconds;
+        this.initialOffsetsByPartition = Map.copyOf(Objects.requireNonNull(initialOffsetsByPartition,
+                "initialOffsetsByPartition must not be null"));
     }
 
     private static PartitionRef parsePartitionRef(String key) {
@@ -104,37 +146,58 @@ public class CommitContiguousHandledOffsetsDoFn extends DoFn<KV<String, Long>, V
             @DoFn.StateId(STATE_PENDING_ACK) ValueState<Long> pendingAckOffsetState,
             @DoFn.StateId(STATE_TIMER_ARMED) ValueState<Long> timerArmedState,
             @DoFn.TimerId(TIMER_COMMIT) Timer commitTimer) {
+        long startNanos = System.nanoTime();
+        handledOffsetsSeen.inc();
 
-        KV<String, Long> keyedOffset = context.element();
-        PartitionRef partitionRef = parsePartitionRef(keyedOffset.getKey());
-        if (partitionRef == null) {
-            return;
-        }
+        try {
 
-        long expectedOffset = offsetCore.getOrLoadExpectedOffset(expectedOffsetState,
-                () -> checkpointService.getNextOffsetToRead(partitionRef.topic, partitionRef.partition));
-
-        long incomingOffset = keyedOffset.getValue();
-        if (incomingOffset < expectedOffset) {
-            return;
-        }
-
-        offsetCore.buffer(bufferedOffsetsState, incomingOffset, incomingOffset);
-        long nextExpected = offsetCore.emitContiguous(expectedOffset, bufferedOffsetsState, ignored -> {
-        });
-        expectedOffsetState.write(nextExpected);
-
-        long lastAckedOffset = nextExpected - 1;
-        if (lastAckedOffset >= expectedOffset) {
-            Long pendingAckOffset = pendingAckOffsetState.read();
-            if (pendingAckOffset == null || lastAckedOffset > pendingAckOffset) {
-                pendingAckOffsetState.write(lastAckedOffset);
+            KV<String, Long> keyedOffset = context.element();
+            PartitionRef partitionRef = parsePartitionRef(keyedOffset.getKey());
+            if (partitionRef == null) {
+                invalidPartitionKeysDropped.inc();
+                return;
             }
 
-            if (timerArmedState.read() == null) {
-                commitTimer.offset(org.joda.time.Duration.standardSeconds(commitIntervalSeconds)).setRelative();
-                timerArmedState.write(1L);
+            long expectedOffset = offsetCore.getOrLoadExpectedOffset(expectedOffsetState,
+                    () -> {
+                        Long preloadedOffset = initialOffsetsByPartition.get(partitionRef.partition);
+                        return Objects.requireNonNullElseGet(preloadedOffset,
+                                () -> checkpointService.getNextOffsetToRead(partitionRef.topic, partitionRef.partition));
+                    });
+
+            long incomingOffset = keyedOffset.getValue();
+            if (incomingOffset < expectedOffset) {
+                staleOffsetsIgnored.inc();
+                return;
             }
+
+            offsetCore.buffer(bufferedOffsetsState, incomingOffset, incomingOffset);
+            long nextExpected = offsetCore.emitContiguous(expectedOffset, bufferedOffsetsState, ignored -> {
+            });
+            expectedOffsetState.write(nextExpected);
+            long advancedCount = nextExpected - expectedOffset;
+            contiguousAdvanceSize.update(advancedCount);
+            bufferedStateSize.update(offsetCore.countBufferedEvents(bufferedOffsetsState));
+
+            long lastAckedOffset = nextExpected - 1;
+            if (lastAckedOffset >= expectedOffset) {
+                offsetsContiguouslyAcked.inc(advancedCount);
+                Long pendingAckOffset = pendingAckOffsetState.read();
+                if (pendingAckOffset == null || lastAckedOffset > pendingAckOffset) {
+                    pendingAckOffsetState.write(lastAckedOffset);
+                    pendingAckUpdated.inc();
+                }
+
+                if (timerArmedState.read() == null) {
+                    commitTimer.offset(org.joda.time.Duration.standardSeconds(commitIntervalSeconds)).setRelative();
+                    timerArmedState.write(1L);
+                    commitTimerArmed.inc();
+                }
+            } else {
+                noProgressBuffered.inc();
+            }
+        } finally {
+            processElementLatencyMs.update((System.nanoTime() - startNanos) / 1_000_000L);
         }
     }
 
@@ -145,8 +208,10 @@ public class CommitContiguousHandledOffsetsDoFn extends DoFn<KV<String, Long>, V
             @DoFn.Key String key,
             @DoFn.StateId(STATE_PENDING_ACK) ValueState<Long> pendingAckOffsetState,
             @DoFn.StateId(STATE_TIMER_ARMED) ValueState<Long> timerArmedState) {
+        commitTimerFired.inc();
         PartitionRef partitionRef = parsePartitionRef(key);
         if (partitionRef == null) {
+            invalidPartitionKeysDropped.inc();
             timerArmedState.clear();
             return;
         }
@@ -154,6 +219,8 @@ public class CommitContiguousHandledOffsetsDoFn extends DoFn<KV<String, Long>, V
         Long pendingAckOffset = pendingAckOffsetState.read();
         if (pendingAckOffset != null) {
             commitPendingOffset(partitionRef, pendingAckOffsetState);
+        } else {
+            commitTimerFiredWithoutPendingAck.inc();
         }
 
         timerArmedState.clear();
@@ -164,7 +231,10 @@ public class CommitContiguousHandledOffsetsDoFn extends DoFn<KV<String, Long>, V
         if (pendingAckOffset == null) {
             return;
         }
+        checkpointCommitAttempted.inc();
+        long startNanos = System.nanoTime();
         checkpointService.updateOffsetCheckpoint(partitionRef.topic, partitionRef.partition, pendingAckOffset, jobId);
+        checkpointServiceCallLatencyMs.update((System.nanoTime() - startNanos) / 1_000_000L);
         LOG.info("Checkpoint updated for {}:{} lastAckedOffset={}",
                 partitionRef.topic, partitionRef.partition, pendingAckOffset);
         pendingAckOffsetState.clear();

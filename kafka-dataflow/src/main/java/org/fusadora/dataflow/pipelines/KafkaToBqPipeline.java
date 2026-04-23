@@ -31,6 +31,7 @@ import org.joda.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -87,6 +88,8 @@ public class KafkaToBqPipeline extends BasePipeline {
         for (TopicConfig topicConfig : Objects.requireNonNull(TopicConfigLoader.readConfig()).getTopicConfigList()) {
             final long topicCheckpointCommitIntervalSeconds = resolveCheckpointCommitIntervalSeconds(
                     topicConfig, checkpointCommitIntervalSeconds);
+            final Map<Integer, Long> initialOffsetsByPartition = getCheckpointService()
+                    .getTopicPartitionOffsets(topicConfig.getTopicName());
 
             //Bootstrap offsets from checkpoint for the topic
             getInputService().bootstrapOffsetsFromCheckpoint(brokerHost, Objects.requireNonNull(topicConfig).getTopicName());
@@ -99,7 +102,8 @@ public class KafkaToBqPipeline extends BasePipeline {
             PCollectionTuple contiguousWithGapEvents = kafkaMessage
                     .apply("Select Contiguous Offsets [" + topicConfig.getTopicName() + "]",
                             new SelectContiguousOffsetsWithGapEventsTransform(
-                                    getCheckpointService(), Duration.standardSeconds(gapTimeoutSeconds), gapAuditEnabled));
+                                    getCheckpointService(), Duration.standardSeconds(gapTimeoutSeconds),
+                                    gapAuditEnabled, initialOffsetsByPartition));
 
             //Fixed window of contiguous records
             PCollection<KafkaEventEnvelope> contiguousKafkaMessage = contiguousWithGapEvents
@@ -159,7 +163,7 @@ public class KafkaToBqPipeline extends BasePipeline {
                     .apply("Merge All Handled Offsets [" + topicConfig.getTopicName() + "]", Flatten.pCollections())
                     .apply("Commit Offsets From Handled Stream [" + topicConfig.getTopicName() + "]",
                             new CommitHandledOffsetsTransform(getCheckpointService(), jobId,
-                                    topicCheckpointCommitIntervalSeconds));
+                                    topicCheckpointCommitIntervalSeconds, initialOffsetsByPartition));
 
         }
 

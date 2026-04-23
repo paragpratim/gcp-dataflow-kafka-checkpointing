@@ -9,6 +9,7 @@ import org.fusadora.dataflow.dofn.CommitContiguousHandledOffsetsDoFn;
 import org.fusadora.dataflow.services.CheckpointService;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -24,20 +25,30 @@ public class CommitHandledOffsetsTransform extends PTransform<@NotNull PCollecti
     private final CheckpointService checkpointService;
     private final String jobId;
     private final long commitIntervalSeconds;
+    private final Map<Integer, Long> initialOffsetsByPartition;
 
     public CommitHandledOffsetsTransform(CheckpointService checkpointService, String jobId, long commitIntervalSeconds) {
+        this(checkpointService, jobId, commitIntervalSeconds, Map.of());
+    }
+
+    public CommitHandledOffsetsTransform(CheckpointService checkpointService, String jobId,
+                                         long commitIntervalSeconds,
+                                         Map<Integer, Long> initialOffsetsByPartition) {
         this.checkpointService = Objects.requireNonNull(checkpointService, "checkpointService must not be null");
         this.jobId = Objects.requireNonNull(jobId, "jobId must not be null");
         if (commitIntervalSeconds <= 0) {
             throw new IllegalArgumentException("commitIntervalSeconds must be > 0");
         }
         this.commitIntervalSeconds = commitIntervalSeconds;
+        this.initialOffsetsByPartition = Map.copyOf(Objects.requireNonNull(initialOffsetsByPartition,
+                "initialOffsetsByPartition must not be null"));
     }
 
     @Override
     public @NotNull PDone expand(PCollection<KV<String, Long>> input) {
         input.apply("Commit contiguous handled offsets",
-                ParDo.of(new CommitContiguousHandledOffsetsDoFn(checkpointService, jobId, commitIntervalSeconds)));
+                ParDo.of(new CommitContiguousHandledOffsetsDoFn(checkpointService, jobId,
+                        commitIntervalSeconds, initialOffsetsByPartition)));
         return PDone.in(input.getPipeline());
     }
 }

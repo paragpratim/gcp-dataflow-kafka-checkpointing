@@ -11,6 +11,7 @@ import org.fusadora.dataflow.services.CheckpointService;
 import org.jetbrains.annotations.NotNull;
 import org.joda.time.Duration;
 
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -37,19 +38,28 @@ public class SelectContiguousOffsetsWithGapEventsTransform extends
     private final CheckpointService checkpointService;
     private final Duration gapWaitTimeout;
     private final boolean auditEnabled;
+    private final Map<Integer, Long> initialOffsetsByPartition;
 
     public SelectContiguousOffsetsWithGapEventsTransform(CheckpointService checkpointService) {
-        this(checkpointService, DEFAULT_GAP_WAIT_TIMEOUT, true);
+        this(checkpointService, DEFAULT_GAP_WAIT_TIMEOUT, true, Map.of());
     }
 
     public SelectContiguousOffsetsWithGapEventsTransform(CheckpointService checkpointService, Duration gapWaitTimeout,
                                                          boolean auditEnabled) {
+        this(checkpointService, gapWaitTimeout, auditEnabled, Map.of());
+    }
+
+    public SelectContiguousOffsetsWithGapEventsTransform(CheckpointService checkpointService, Duration gapWaitTimeout,
+                                                         boolean auditEnabled,
+                                                         Map<Integer, Long> initialOffsetsByPartition) {
         this.checkpointService = Objects.requireNonNull(checkpointService, "checkpointService must not be null");
         this.gapWaitTimeout = Objects.requireNonNull(gapWaitTimeout, "gapWaitTimeout must not be null");
         if (gapWaitTimeout.getMillis() <= 0) {
             throw new IllegalArgumentException("gapWaitTimeout must be > 0");
         }
         this.auditEnabled = auditEnabled;
+        this.initialOffsetsByPartition = Map.copyOf(Objects.requireNonNull(initialOffsetsByPartition,
+                "initialOffsetsByPartition must not be null"));
     }
 
     @Override
@@ -63,7 +73,7 @@ public class SelectContiguousOffsetsWithGapEventsTransform extends
                 }))
                 .apply("Filter contiguous offsets with gap events",
                         ParDo.of(new GapAwareOffsetDoFn(checkpointService, gapWaitTimeout.getMillis(), auditEnabled,
-                                        GAP_TIMEOUT_OFFSET_TAG))
+                                        GAP_TIMEOUT_OFFSET_TAG, initialOffsetsByPartition))
                                 .withOutputTags(CONTIGUOUS_MAIN_TAG, TupleTagList.of(GAP_TIMEOUT_OFFSET_TAG)));
     }
 }

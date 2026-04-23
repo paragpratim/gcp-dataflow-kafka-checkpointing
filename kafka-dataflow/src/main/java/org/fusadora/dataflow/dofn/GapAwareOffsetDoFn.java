@@ -16,6 +16,7 @@ import org.joda.time.Instant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -46,6 +47,7 @@ public class GapAwareOffsetDoFn extends DoFn<KV<String, KafkaEventEnvelope>, Kaf
     private final long gapWaitTimeoutMs;
     private final boolean auditEnabled;
     private final TupleTag<KV<String, Long>> gapTimeoutOffsetTag;
+    private final Map<Integer, Long> initialOffsetsByPartition;
     private final ContiguousOffsetStateCore<KafkaEventEnvelope> offsetCore = new ContiguousOffsetStateCore<>();
 
     private final Counter gapDetected = Metrics.counter(GapAwareOffsetDoFn.class, "gap_detected");
@@ -72,11 +74,17 @@ public class GapAwareOffsetDoFn extends DoFn<KV<String, KafkaEventEnvelope>, Kaf
     private final TimerSpec gapTimeoutTimerSpec = TimerSpecs.timer(TimeDomain.PROCESSING_TIME);
 
     public GapAwareOffsetDoFn(CheckpointService checkpointService, long gapWaitTimeoutMs, boolean auditEnabled) {
-        this(checkpointService, gapWaitTimeoutMs, auditEnabled, null);
+        this(checkpointService, gapWaitTimeoutMs, auditEnabled, null, Map.of());
     }
 
     public GapAwareOffsetDoFn(CheckpointService checkpointService, long gapWaitTimeoutMs, boolean auditEnabled,
                               TupleTag<KV<String, Long>> gapTimeoutOffsetTag) {
+        this(checkpointService, gapWaitTimeoutMs, auditEnabled, gapTimeoutOffsetTag, Map.of());
+    }
+
+    public GapAwareOffsetDoFn(CheckpointService checkpointService, long gapWaitTimeoutMs, boolean auditEnabled,
+                              TupleTag<KV<String, Long>> gapTimeoutOffsetTag,
+                              Map<Integer, Long> initialOffsetsByPartition) {
         this.checkpointService = Objects.requireNonNull(checkpointService, "checkpointService must not be null");
         if (gapWaitTimeoutMs <= 0) {
             throw new IllegalArgumentException("gapWaitTimeoutMs must be > 0");
@@ -84,6 +92,8 @@ public class GapAwareOffsetDoFn extends DoFn<KV<String, KafkaEventEnvelope>, Kaf
         this.gapWaitTimeoutMs = gapWaitTimeoutMs;
         this.auditEnabled = auditEnabled;
         this.gapTimeoutOffsetTag = gapTimeoutOffsetTag;
+        this.initialOffsetsByPartition = Map.copyOf(Objects.requireNonNull(initialOffsetsByPartition,
+                "initialOffsetsByPartition must not be null"));
     }
 
     @SuppressWarnings("unused") // Invoked by Beam runtime via @ProcessElement
@@ -175,7 +185,12 @@ public class GapAwareOffsetDoFn extends DoFn<KV<String, KafkaEventEnvelope>, Kaf
     }
 
     private long getOrLoadExpectedOffset(ValueState<Long> expectedOffsetState, KafkaEventEnvelope envelope) {
-        return offsetCore.getOrLoadExpectedOffset(expectedOffsetState,
-                () -> checkpointService.getNextOffsetToRead(envelope.getTopic(), envelope.getPartition()));
+        return offsetCore.getOrLoadExpectedOffset(expectedOffsetState, () -> {
+            Long preloadedOffset = initialOffsetsByPartition.get(envelope.getPartition());
+            if (preloadedOffset != null) {
+                return preloadedOffset;
+            }
+            return checkpointService.getNextOffsetToRead(envelope.getTopic(), envelope.getPartition());
+        });
     }
 }
