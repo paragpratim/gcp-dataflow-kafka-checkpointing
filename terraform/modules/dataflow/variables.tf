@@ -77,3 +77,10 @@ variable "nat_name" {
   type        = string
   default     = ""
 }
+
+# variable for memorystore
+variable "create_memorystore" {
+  description = "Whether to create a Memorystore Redis instance for Dataflow checkpointing"
+  type        = bool
+  default     = false
+}

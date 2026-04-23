@@ -81,3 +81,18 @@ output "firestore_database_name" {
   description = "The name of the created Firestore database for Kafka checkpointing."
   value       = google_firestore_database.dataflow_kafka_checkpointing_firestore.name
 }
+
+output "memorystore_redis_host" {
+  description = "Private IP address of the Memorystore Redis instance."
+  value       = google_redis_instance.dataflow_memorystore.host
+}
+
+output "memorystore_redis_port" {
+  description = "Port of the Memorystore Redis instance."
+  value       = google_redis_instance.dataflow_memorystore.port
+}
+
+output "memorystore_redis_name" {
+  description = "Name of the Memorystore Redis instance."
+  value       = google_redis_instance.dataflow_memorystore.name
+}

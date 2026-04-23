@@ -15,6 +15,8 @@ resource "google_project_service" "required_apis" {
     "dataflow.googleapis.com",
     "artifactregistry.googleapis.com",
     "firestore.googleapis.com",
+    "redis.googleapis.com",
+    "servicenetworking.googleapis.com",
   ])
 
   service            = each.value
@@ -174,15 +176,4 @@ resource "google_compute_router_nat" "dataflow_nat" {
   }
 
   depends_on = [google_compute_subnetwork.dataflow_subnet]
-}
-
-# Create Firestore database for Kafka checkpointing
-resource "google_firestore_database" "dataflow_kafka_checkpointing_firestore" {
-  name             = "dataflow-kafka-checkpointing"
-  project          = var.project_id
-  location_id      = var.region
-  type             = "FIRESTORE_NATIVE"
-  database_edition = "STANDARD"
-
-  depends_on = [google_project_service.required_apis]
 }

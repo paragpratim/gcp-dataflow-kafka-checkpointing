@@ -10,6 +10,8 @@ module "dataflow" {
 
   artifact_registry_repository_id = var.artifact_registry_repository_id
   artifact_registry_format        = var.artifact_registry_format
+
+  create_memorystore = var.create_memorystore
 }
 
 module "dataflow_workflow_orchestrator" {

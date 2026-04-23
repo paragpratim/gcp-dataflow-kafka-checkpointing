@@ -84,3 +84,18 @@ output "workflow_service_account_email" {
   description = "Service account used by the workflow."
   value       = var.create_dataflow_workflow_orchestrator ? module.dataflow_workflow_orchestrator[0].workflow_service_account_email : null
 }
+
+output "memorystore_redis_host" {
+  description = "Private IP address of the Memorystore Redis instance."
+  value       = module.dataflow.memorystore_redis_host
+}
+
+output "memorystore_redis_port" {
+  description = "Port of the Memorystore Redis instance."
+  value       = module.dataflow.memorystore_redis_port
+}
+
+output "memorystore_redis_name" {
+  description = "Name of the Memorystore Redis instance."
+  value       = module.dataflow.memorystore_redis_name
+}
