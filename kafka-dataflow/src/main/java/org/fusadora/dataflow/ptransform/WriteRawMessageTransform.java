@@ -5,7 +5,6 @@ import org.apache.beam.sdk.io.gcp.bigquery.WriteResult;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.values.PCollection;
-import org.fusadora.dataflow.dofn.FilterValidPayloadDoFn;
 import org.fusadora.dataflow.dofn.KafkaEnvelopeToTableRowDoFn;
 import org.fusadora.dataflow.dto.KafkaEventEnvelope;
 import org.fusadora.dataflow.dto.TopicConfig;
@@ -27,7 +26,7 @@ public class WriteRawMessageTransform extends PTransform<@NotNull PCollection<Ka
     public static final String BQ_SCHEMA_RAW_MESSAGE = "schema/raw_message_schema.txt";
 
     /**
-     * Payloads containing this keyword are treated as invalid and dropped before BQ write.
+     * Payload filter keyword used by pipeline-level filtering before this transform.
      */
     public static final String INVALID_PAYLOAD_KEYWORD = "errorMessage";
 
@@ -52,8 +51,6 @@ public class WriteRawMessageTransform extends PTransform<@NotNull PCollection<Ka
         BQSchema rawMessageSchema = BQSchema.fromFile(BQ_SCHEMA_RAW_MESSAGE);
 
         PCollection<TableRow> rawMessageRow = input
-                .apply("Filter Invalid Payloads [" + topicConfig.getTopicName() + "]",
-                        ParDo.of(new FilterValidPayloadDoFn(INVALID_PAYLOAD_KEYWORD)))
                 .apply("Get Raw Message TableRow",
                         ParDo.of(new KafkaEnvelopeToTableRowDoFn(topicConfig)));
 

@@ -3,7 +3,9 @@ package org.fusadora.dataflow.dofn;
 import com.google.api.services.bigquery.model.TableRow;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.coders.AtomicCoder;
+import org.apache.beam.sdk.coders.KvCoder;
 import org.apache.beam.sdk.coders.StringUtf8Coder;
+import org.apache.beam.sdk.coders.VarLongCoder;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryStorageApiInsertError;
 import org.apache.beam.sdk.io.gcp.bigquery.TableRowJsonCoder;
 import org.apache.beam.sdk.testing.PAssert;
@@ -12,6 +14,9 @@ import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollection;
+import org.apache.beam.sdk.values.PCollectionTuple;
+import org.apache.beam.sdk.values.TupleTag;
+import org.apache.beam.sdk.values.TupleTagList;
 import org.fusadora.dataflow.common.KafkaMetadataConstants;
 import org.fusadora.dataflow.dto.KafkaEventEnvelope;
 import org.fusadora.dataflow.testing.BigQueryTestUtils;
@@ -72,6 +77,27 @@ class MappingDoFnsTest {
         PAssert.that(output).containsInAnyOrder(List.of(
                 KafkaTestData.envelope("test_df", 0, 3L, "hello"),
                 KafkaTestData.envelope("test_df", 0, 4L, "world")));
+
+        pipeline.run().waitUntilFinish();
+    }
+
+    @Test
+    void filterValidPayloadEmitsDroppedOffsetsToSideOutputWhenConfigured() {
+        TupleTag<KafkaEventEnvelope> validTag = new TupleTag<>();
+        TupleTag<KV<String, Long>> droppedOffsetTag = new TupleTag<>();
+
+        PCollectionTuple output = pipeline
+                .apply(Create.of(
+                        KafkaTestData.envelope("test_df", 0, 10L, "ok-payload"),
+                        KafkaTestData.envelope("test_df", 0, 11L, "{\"errorMessage\":\"bad\"}")))
+                .apply(ParDo.of(new FilterValidPayloadDoFn("errorMessage", droppedOffsetTag))
+                        .withOutputTags(validTag, TupleTagList.of(droppedOffsetTag)));
+
+        PAssert.that(output.get(validTag)).containsInAnyOrder(List.of(
+                KafkaTestData.envelope("test_df", 0, 10L, "ok-payload")));
+        PCollection<KV<String, Long>> droppedOffsets = output.get(droppedOffsetTag)
+                .setCoder(KvCoder.of(StringUtf8Coder.of(), VarLongCoder.of()));
+        PAssert.that(droppedOffsets).containsInAnyOrder(List.of(KV.of("test_df:0", 11L)));
 
         pipeline.run().waitUntilFinish();
     }

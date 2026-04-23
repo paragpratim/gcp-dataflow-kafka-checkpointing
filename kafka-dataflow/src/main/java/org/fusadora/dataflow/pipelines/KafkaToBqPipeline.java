@@ -3,6 +3,9 @@ package org.fusadora.dataflow.pipelines;
 import com.google.api.services.bigquery.model.TableRow;
 import com.google.inject.Inject;
 import org.apache.beam.sdk.Pipeline;
+import org.apache.beam.sdk.coders.KvCoder;
+import org.apache.beam.sdk.coders.StringUtf8Coder;
+import org.apache.beam.sdk.coders.VarLongCoder;
 import org.apache.beam.sdk.io.gcp.bigquery.WriteResult;
 import org.apache.beam.sdk.transforms.Flatten;
 import org.apache.beam.sdk.transforms.MapElements;
@@ -12,7 +15,10 @@ import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionList;
 import org.apache.beam.sdk.values.PCollectionTuple;
+import org.apache.beam.sdk.values.TupleTag;
+import org.apache.beam.sdk.values.TupleTagList;
 import org.fusadora.dataflow.dataflowoptions.DataflowOptions;
+import org.fusadora.dataflow.dofn.FilterValidPayloadDoFn;
 import org.fusadora.dataflow.dofn.DropInvalidHandledRowsFn;
 import org.fusadora.dataflow.dofn.ExtractFailedRowsDoFn;
 import org.fusadora.dataflow.dofn.ExtractHandledWriteOffsetsFn;
@@ -111,6 +117,19 @@ public class KafkaToBqPipeline extends BasePipeline {
                     .apply("Window Contiguous Offsets [" + topicConfig.getTopicName() + "]",
                             Window.into(FixedWindows.of(Duration.standardSeconds(WINDOW_SIZE_SECONDS))));
 
+            // Invalid payloads are not written to BQ, but their offsets must still be treated as handled.
+            TupleTag<KafkaEventEnvelope> validPayloadTag = new TupleTag<>();
+            TupleTag<KV<String, Long>> droppedInvalidPayloadOffsetTag = new TupleTag<>();
+            PCollectionTuple validWithDroppedOffsets = contiguousKafkaMessage
+                    .apply("Filter Invalid Payloads With Dropped Offset Side Output [" + topicConfig.getTopicName() + "]",
+                            ParDo.of(new FilterValidPayloadDoFn(WriteRawMessageTransform.INVALID_PAYLOAD_KEYWORD,
+                                            droppedInvalidPayloadOffsetTag))
+                                    .withOutputTags(validPayloadTag, TupleTagList.of(droppedInvalidPayloadOffsetTag)));
+            PCollection<KafkaEventEnvelope> validContiguousKafkaMessage = validWithDroppedOffsets.get(validPayloadTag);
+            PCollection<KV<String, Long>> droppedInvalidPayloadOffsets = validWithDroppedOffsets
+                    .get(droppedInvalidPayloadOffsetTag)
+                    .setCoder(KvCoder.of(StringUtf8Coder.of(), VarLongCoder.of()));
+
             //Fixed window of gap-timeout offsets to be skipped with checkpoint progression.
             PCollection<KV<String, Long>> sourceGapTimeoutOffsets = contiguousWithGapEvents
                     .get(SelectContiguousOffsetsWithGapEventsTransform.GAP_TIMEOUT_OFFSET_TAG)
@@ -118,7 +137,7 @@ public class KafkaToBqPipeline extends BasePipeline {
                             Window.into(FixedWindows.of(Duration.standardSeconds(WINDOW_SIZE_SECONDS))));
 
             //Write to BigQuery
-            WriteResult writeResult = contiguousKafkaMessage.apply("Write Raw Messages to BigQuery",
+            WriteResult writeResult = validContiguousKafkaMessage.apply("Write Raw Messages to BigQuery",
                     new WriteRawMessageTransform(getOutputService(), topicConfig));
 
             //Success rows are handled offsets for checkpoint progression.
@@ -157,9 +176,14 @@ public class KafkaToBqPipeline extends BasePipeline {
                     .apply("Global Window Gap Timeout Offsets [" + topicConfig.getTopicName() + "]",
                             globalCommitWindow);
 
-            //Merge source gap-timeout offsets with BQ handled offsets and commit from one stream.
+            PCollection<KV<String, Long>> droppedInvalidPayloadOffsetsGlobal = droppedInvalidPayloadOffsets
+                    .apply("Global Window Dropped Invalid Payload Offsets [" + topicConfig.getTopicName() + "]",
+                            globalCommitWindow);
+
+            //Merge all handled paths and commit from one stream.
             PCollectionList.of(handledOffsetsFromBqGlobal)
                     .and(sourceGapTimeoutOffsetsGlobal)
+                    .and(droppedInvalidPayloadOffsetsGlobal)
                     .apply("Merge All Handled Offsets [" + topicConfig.getTopicName() + "]", Flatten.pCollections())
                     .apply("Commit Offsets From Handled Stream [" + topicConfig.getTopicName() + "]",
                             new CommitHandledOffsetsTransform(getCheckpointService(), jobId,

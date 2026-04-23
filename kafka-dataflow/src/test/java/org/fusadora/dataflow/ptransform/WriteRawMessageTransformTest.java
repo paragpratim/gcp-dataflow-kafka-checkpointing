@@ -26,7 +26,7 @@ class WriteRawMessageTransformTest {
     }
 
     @Test
-    void writesOnlyNonErrorPayloadRowsAndPreservesKafkaMetadata() {
+    void writesProvidedRowsAndPreservesKafkaMetadata() {
         Pipeline pipeline = Pipeline.create();
         TestOutputService.setFailingOffsets(Set.of());
         TestOutputService outputService = new TestOutputService();
@@ -41,10 +41,12 @@ class WriteRawMessageTransformTest {
         PAssert.that(TestOutputService.capturedRows()).satisfies(rows -> {
             List<TableRow> list = new ArrayList<>();
             rows.forEach(list::add);
-            assertEquals(1, list.size(), "Expected one BQ row");
-            TableRow row = list.get(0);
-            assertEquals("payload-1", row.get(SCHEMA_RAW_MESSAGE));
-            assertEquals(1L, BigQueryTestUtils.parseOffset(row));
+            assertEquals(2, list.size(), "Expected two BQ rows from pure write transform");
+            list.sort((a, b) -> Long.compare(BigQueryTestUtils.parseOffset(a), BigQueryTestUtils.parseOffset(b)));
+            assertEquals("payload-1", list.get(0).get(SCHEMA_RAW_MESSAGE));
+            assertEquals(1L, BigQueryTestUtils.parseOffset(list.get(0)));
+            assertEquals("{\"errorMessage\":\"skip\"}", list.get(1).get(SCHEMA_RAW_MESSAGE));
+            assertEquals(2L, BigQueryTestUtils.parseOffset(list.get(1)));
             return null;
         });
 

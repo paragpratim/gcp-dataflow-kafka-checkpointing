@@ -43,7 +43,9 @@ public class CommitContiguousHandledOffsetsDoFn extends DoFn<KV<String, Long>, V
     private static final String STATE_BUFFERED = "bufferedOffsets";
     private static final String STATE_PENDING_ACK = "pendingAckOffset";
     private static final String STATE_TIMER_ARMED = "commitTimerArmed";
+    private static final String STATE_BUFFER_METRIC_SAMPLE_COUNTER = "bufferMetricSampleCounter";
     private static final String TIMER_COMMIT = "commitTimer";
+    private static final long BUFFER_METRIC_SAMPLE_EVERY = 1000L;
 
     private final CheckpointService checkpointService;
     private final String jobId;
@@ -95,6 +97,10 @@ public class CommitContiguousHandledOffsetsDoFn extends DoFn<KV<String, Long>, V
     @SuppressWarnings("unused") // Referenced by Beam runtime via @StateId
     private final StateSpec<ValueState<Long>> timerArmedSpec = StateSpecs.value(VarLongCoder.of());
 
+    @DoFn.StateId(STATE_BUFFER_METRIC_SAMPLE_COUNTER)
+    @SuppressWarnings("unused") // Referenced by Beam runtime via @StateId
+    private final StateSpec<ValueState<Long>> bufferMetricSampleCounterSpec = StateSpecs.value(VarLongCoder.of());
+
     @DoFn.TimerId(TIMER_COMMIT)
     @SuppressWarnings("unused") // Referenced by Beam runtime via @TimerId
     private final TimerSpec commitTimerSpec = TimerSpecs.timer(TimeDomain.PROCESSING_TIME);
@@ -145,6 +151,7 @@ public class CommitContiguousHandledOffsetsDoFn extends DoFn<KV<String, Long>, V
             @DoFn.StateId(STATE_BUFFERED) MapState<Long, Long> bufferedOffsetsState,
             @DoFn.StateId(STATE_PENDING_ACK) ValueState<Long> pendingAckOffsetState,
             @DoFn.StateId(STATE_TIMER_ARMED) ValueState<Long> timerArmedState,
+            @DoFn.StateId(STATE_BUFFER_METRIC_SAMPLE_COUNTER) ValueState<Long> bufferMetricSampleCounterState,
             @DoFn.TimerId(TIMER_COMMIT) Timer commitTimer) {
         long startNanos = System.nanoTime();
         handledOffsetsSeen.inc();
@@ -177,7 +184,12 @@ public class CommitContiguousHandledOffsetsDoFn extends DoFn<KV<String, Long>, V
             expectedOffsetState.write(nextExpected);
             long advancedCount = nextExpected - expectedOffset;
             contiguousAdvanceSize.update(advancedCount);
-            bufferedStateSize.update(offsetCore.countBufferedEvents(bufferedOffsetsState));
+            Long sampleCounter = bufferMetricSampleCounterState.read();
+            long nextSampleCounter = sampleCounter == null ? 1L : sampleCounter + 1L;
+            bufferMetricSampleCounterState.write(nextSampleCounter);
+            if (nextSampleCounter % BUFFER_METRIC_SAMPLE_EVERY == 0L) {
+                bufferedStateSize.update(offsetCore.countBufferedEvents(bufferedOffsetsState));
+            }
 
             long lastAckedOffset = nextExpected - 1;
             if (lastAckedOffset >= expectedOffset) {

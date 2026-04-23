@@ -105,6 +105,24 @@ class KafkaToBqPipelineTest {
     }
 
     @Test
+    void pipelineAdvancesCheckpointAcrossDroppedInvalidPayloadOffsets() {
+        TestInputService.setSourceTransform(
+                TestStream.create(KafkaTestData.kafkaRecordCoder())
+                        .addElements(
+                                KafkaTestData.kafkaRecord("test_df", 0, 0L, "a"),
+                                KafkaTestData.kafkaRecord("test_df", 0, 1L, "{\"errorMessage\":\"bad\"}"),
+                                KafkaTestData.kafkaRecord("test_df", 0, 2L, "c"))
+                        .advanceProcessingTime(Duration.standardMinutes(2))
+                        .advanceWatermarkToInfinity());
+        TestOutputService.setFailingOffsets(Set.of());
+        RecordingCheckpointService.seed(Map.of("test_df:0", 0L));
+
+        runPipeline("job-invalid-payload-handled");
+
+        assertEquals(3L, RecordingCheckpointService.nextOffset("test_df", 0));
+    }
+
+    @Test
     void topicSpecificCheckpointCommitIntervalOverridesGlobalDefault() {
         TopicConfig topicConfig = new TopicConfig();
         topicConfig.setCheckpointCommitIntervalSeconds(15L);
