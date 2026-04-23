@@ -18,7 +18,7 @@ import java.util.Map;
  * @since 04/12/2025
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder({"topicName", "datasetName", "checkpointCommitIntervalSeconds"})
+@JsonPropertyOrder({"topicName", "datasetName", "tableName", "checkpointCommitIntervalSeconds"})
 public class TopicConfig extends BaseDto {
 
     @Serial
@@ -32,6 +32,8 @@ public class TopicConfig extends BaseDto {
     private String topicName;
     @JsonProperty("datasetName")
     private String datasetName;
+    @JsonProperty("tableName")
+    private String tableName;
     @JsonProperty("checkpointCommitIntervalSeconds")
     private Long checkpointCommitIntervalSeconds;
 
@@ -61,6 +63,12 @@ public class TopicConfig extends BaseDto {
     @JsonProperty("datasetName")
     public void setDatasetName(String datasetName) { this.datasetName = datasetName; }
 
+    @JsonProperty("tableName")
+    public String getTableName() { return tableName; }
+
+    @JsonProperty("tableName")
+    public void setTableName(String tableName) { this.tableName = tableName; }
+
     @JsonProperty("checkpointCommitIntervalSeconds")
     public Long getCheckpointCommitIntervalSeconds() { return checkpointCommitIntervalSeconds; }
 
@@ -82,11 +90,12 @@ public class TopicConfig extends BaseDto {
         return Objects.equal(additionalProperties, that.additionalProperties)
                 && Objects.equal(topicName, that.topicName)
                 && Objects.equal(datasetName, that.datasetName)
+                && Objects.equal(tableName, that.tableName)
                 && Objects.equal(checkpointCommitIntervalSeconds, that.checkpointCommitIntervalSeconds);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(additionalProperties, topicName, datasetName, checkpointCommitIntervalSeconds);
+        return Objects.hashCode(additionalProperties, topicName, datasetName, tableName, checkpointCommitIntervalSeconds);
     }
 }

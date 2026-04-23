@@ -35,7 +35,8 @@ class WriteRawMessageTransformTest {
         pipeline.apply(Create.of(
                         KafkaTestData.envelope("test_df", 0, 1L, "payload-1"),
                         KafkaTestData.envelope("test_df", 0, 2L, "{\"errorMessage\":\"skip\"}")))
-                .apply(new WriteRawMessageTransform(outputService, KafkaTestData.topicConfig("test_df", "dataset")));
+                .apply(new WriteRawMessageTransform(outputService,
+                        KafkaTestData.topicConfig("test_df", "dataset", "raw_test_df")));
 
         PAssert.that(TestOutputService.capturedRows()).satisfies(rows -> {
             List<TableRow> list = new ArrayList<>();
@@ -48,5 +49,13 @@ class WriteRawMessageTransformTest {
         });
 
         pipeline.run().waitUntilFinish();
+
+        assertEquals(List.of("dataset.raw_test_df"), TestOutputService.bqTableNames());
+    }
+
+    @Test
+    void fallsBackToDefaultRawTableWhenTopicTableNameMissing() {
+        assertEquals(WriteRawMessageTransform.BQ_TABLE_RAW_MESSAGE,
+                WriteRawMessageTransform.resolveTableName(KafkaTestData.topicConfig("test_df", "dataset")));
     }
 }

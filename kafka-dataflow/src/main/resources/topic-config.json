@@ -3,6 +3,7 @@
     {
       "topicName": "test_df",
       "datasetName": "test_topic",
+      "tableName": "kafka_raw_message_test_df",
       "checkpointCommitIntervalSeconds": 60
     }
   ]

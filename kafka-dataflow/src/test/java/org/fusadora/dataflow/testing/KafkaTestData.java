@@ -27,9 +27,14 @@ public final class KafkaTestData {
     }
 
     public static TopicConfig topicConfig(String topicName, String datasetName) {
+        return topicConfig(topicName, datasetName, null);
+    }
+
+    public static TopicConfig topicConfig(String topicName, String datasetName, String tableName) {
         TopicConfig topicConfig = new TopicConfig();
         topicConfig.setTopicName(topicName);
         topicConfig.setDatasetName(datasetName);
+        topicConfig.setTableName(tableName);
         return topicConfig;
     }
 

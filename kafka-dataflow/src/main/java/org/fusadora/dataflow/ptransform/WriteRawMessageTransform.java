@@ -13,6 +13,8 @@ import org.fusadora.dataflow.services.OutputService;
 import org.fusadora.dataflow.utilities.BQSchema;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Objects;
+
 /**
  * org.fusadora.dataflow.ptransform.WriteRawMessageTransform
  * This is a Beam PTransform that Write Raw Kafka message to BigQuery table
@@ -33,8 +35,16 @@ public class WriteRawMessageTransform extends PTransform<@NotNull PCollection<Ka
     private final TopicConfig topicConfig;
 
     public WriteRawMessageTransform(OutputService outputService, TopicConfig topicConfig) {
-        this.outputService = outputService;
-        this.topicConfig = topicConfig;
+        this.outputService = Objects.requireNonNull(outputService, "outputService must not be null");
+        this.topicConfig = Objects.requireNonNull(topicConfig, "topicConfig must not be null");
+    }
+
+    static String resolveTableName(TopicConfig topicConfig) {
+        String configuredTableName = topicConfig.getTableName();
+        if (configuredTableName == null || configuredTableName.isBlank()) {
+            return BQ_TABLE_RAW_MESSAGE;
+        }
+        return configuredTableName;
     }
 
     @Override
@@ -48,7 +58,7 @@ public class WriteRawMessageTransform extends PTransform<@NotNull PCollection<Ka
                         ParDo.of(new KafkaEnvelopeToTableRowDoFn(topicConfig)));
 
         return outputService.writeToBqFileLoad(rawMessageRow, "Write Raw Message To Bq", topicConfig.getDatasetName()
-                        .concat(".").concat(BQ_TABLE_RAW_MESSAGE),
+                        .concat(".").concat(resolveTableName(topicConfig)),
                 rawMessageSchema.getTableSchema(), "DAY");
     }
 }

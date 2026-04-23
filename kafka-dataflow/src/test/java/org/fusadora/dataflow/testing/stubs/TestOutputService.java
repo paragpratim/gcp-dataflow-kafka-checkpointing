@@ -35,11 +35,13 @@ public class TestOutputService implements OutputService, Serializable {
     private static Set<Long> failingOffsets = Set.of();
     private static PCollection<TableRow> capturedRows;
     private static final List<String> KAFKA_WRITE_TOPICS = new ArrayList<>();
+    private static final List<String> BQ_TABLE_NAMES = new ArrayList<>();
 
     public static void reset() {
         failingOffsets = Set.of();
         capturedRows = null;
         KAFKA_WRITE_TOPICS.clear();
+        BQ_TABLE_NAMES.clear();
     }
 
     public static void setFailingOffsets(Set<Long> offsets) {
@@ -54,10 +56,15 @@ public class TestOutputService implements OutputService, Serializable {
         return List.copyOf(KAFKA_WRITE_TOPICS);
     }
 
+    public static List<String> bqTableNames() {
+        return List.copyOf(BQ_TABLE_NAMES);
+    }
+
     @Override
     public WriteResult writeToBqFileLoad(PCollection<TableRow> input, String transformName, String bqTableName,
                                          TableSchema bqTableSchema, String partitionType) {
         capturedRows = input;
+        BQ_TABLE_NAMES.add(bqTableName);
 
         PCollection<TableRow> successRows = input.apply(transformName + "-success-filter",
                 Filter.by(row -> row != null && !failingOffsets.contains(BigQueryTestUtils.parseOffset(row))));
