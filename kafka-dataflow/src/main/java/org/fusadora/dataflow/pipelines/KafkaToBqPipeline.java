@@ -11,17 +11,12 @@ import org.apache.beam.sdk.transforms.Flatten;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.transforms.windowing.*;
-import org.apache.beam.sdk.values.KV;
-import org.apache.beam.sdk.values.PCollection;
-import org.apache.beam.sdk.values.PCollectionList;
-import org.apache.beam.sdk.values.PCollectionTuple;
-import org.apache.beam.sdk.values.TupleTag;
-import org.apache.beam.sdk.values.TupleTagList;
+import org.apache.beam.sdk.values.*;
 import org.fusadora.dataflow.dataflowoptions.DataflowOptions;
-import org.fusadora.dataflow.dofn.FilterValidPayloadDoFn;
 import org.fusadora.dataflow.dofn.DropInvalidHandledRowsFn;
 import org.fusadora.dataflow.dofn.ExtractFailedRowsDoFn;
 import org.fusadora.dataflow.dofn.ExtractHandledWriteOffsetsFn;
+import org.fusadora.dataflow.dofn.FilterValidPayloadDoFn;
 import org.fusadora.dataflow.dto.KafkaEventEnvelope;
 import org.fusadora.dataflow.dto.TopicConfig;
 import org.fusadora.dataflow.ptransform.CommitHandledOffsetsTransform;
@@ -40,6 +35,9 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 import java.util.Objects;
 
+import static org.fusadora.dataflow.dofn.FilterValidPayloadDoFn.DROPPED_INVALID_OFFSET_PAYLOAD_TAG;
+import static org.fusadora.dataflow.dofn.FilterValidPayloadDoFn.VALID_PAYLOAD_TAG;
+
 /**
  * org.fusadora.dataflow.pipelines.KafkaToBqPipeline
  * Pipeline to process Kafka messages to BQ.
@@ -56,6 +54,7 @@ public class KafkaToBqPipeline extends BasePipeline {
     private static final long WINDOW_SIZE_SECONDS = 10L;
     private static final long DEFAULT_GAP_TIMEOUT_SECONDS = 300L;
     private static final long DEFAULT_CHECKPOINT_COMMIT_INTERVAL_SECONDS = 60L;
+
 
     @Inject
     public KafkaToBqPipeline(InputService aInputService, OutputService aOutputService,
@@ -95,7 +94,7 @@ public class KafkaToBqPipeline extends BasePipeline {
             final long topicCheckpointCommitIntervalSeconds = resolveCheckpointCommitIntervalSeconds(
                     topicConfig, checkpointCommitIntervalSeconds);
             final Map<Integer, Long> initialOffsetsByPartition = getCheckpointService()
-                    .getTopicPartitionOffsets(topicConfig.getTopicName());
+                    .getTopicPartitionOffsets(Objects.requireNonNull(topicConfig).getTopicName());
 
             //Bootstrap offsets from checkpoint for the topic
             getInputService().bootstrapOffsetsFromCheckpoint(brokerHost, Objects.requireNonNull(topicConfig).getTopicName());
@@ -118,16 +117,13 @@ public class KafkaToBqPipeline extends BasePipeline {
                             Window.into(FixedWindows.of(Duration.standardSeconds(WINDOW_SIZE_SECONDS))));
 
             // Invalid payloads are not written to BQ, but their offsets must still be treated as handled.
-            TupleTag<KafkaEventEnvelope> validPayloadTag = new TupleTag<>();
-            TupleTag<KV<String, Long>> droppedInvalidPayloadOffsetTag = new TupleTag<>();
             PCollectionTuple validWithDroppedOffsets = contiguousKafkaMessage
                     .apply("Filter Invalid Payloads With Dropped Offset Side Output [" + topicConfig.getTopicName() + "]",
-                            ParDo.of(new FilterValidPayloadDoFn(WriteRawMessageTransform.INVALID_PAYLOAD_KEYWORD,
-                                            droppedInvalidPayloadOffsetTag))
-                                    .withOutputTags(validPayloadTag, TupleTagList.of(droppedInvalidPayloadOffsetTag)));
-            PCollection<KafkaEventEnvelope> validContiguousKafkaMessage = validWithDroppedOffsets.get(validPayloadTag);
+                            ParDo.of(new FilterValidPayloadDoFn(WriteRawMessageTransform.INVALID_PAYLOAD_KEYWORD))
+                                    .withOutputTags(VALID_PAYLOAD_TAG, TupleTagList.of(DROPPED_INVALID_OFFSET_PAYLOAD_TAG)));
+            PCollection<KafkaEventEnvelope> validContiguousKafkaMessage = validWithDroppedOffsets.get(VALID_PAYLOAD_TAG);
             PCollection<KV<String, Long>> droppedInvalidPayloadOffsets = validWithDroppedOffsets
-                    .get(droppedInvalidPayloadOffsetTag)
+                    .get(DROPPED_INVALID_OFFSET_PAYLOAD_TAG)
                     .setCoder(KvCoder.of(StringUtf8Coder.of(), VarLongCoder.of()));
 
             //Fixed window of gap-timeout offsets to be skipped with checkpoint progression.

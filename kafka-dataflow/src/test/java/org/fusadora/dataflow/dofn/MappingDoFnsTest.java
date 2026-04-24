@@ -15,7 +15,6 @@ import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionTuple;
-import org.apache.beam.sdk.values.TupleTag;
 import org.apache.beam.sdk.values.TupleTagList;
 import org.fusadora.dataflow.common.KafkaMetadataConstants;
 import org.fusadora.dataflow.dto.KafkaEventEnvelope;
@@ -24,11 +23,13 @@ import org.fusadora.dataflow.testing.KafkaTestData;
 import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.List;
 
+import static org.fusadora.dataflow.dofn.FilterValidPayloadDoFn.DROPPED_INVALID_OFFSET_PAYLOAD_TAG;
+import static org.fusadora.dataflow.dofn.FilterValidPayloadDoFn.VALID_PAYLOAD_TAG;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class MappingDoFnsTest {
@@ -83,19 +84,16 @@ class MappingDoFnsTest {
 
     @Test
     void filterValidPayloadEmitsDroppedOffsetsToSideOutputWhenConfigured() {
-        TupleTag<KafkaEventEnvelope> validTag = new TupleTag<>();
-        TupleTag<KV<String, Long>> droppedOffsetTag = new TupleTag<>();
-
         PCollectionTuple output = pipeline
                 .apply(Create.of(
                         KafkaTestData.envelope("test_df", 0, 10L, "ok-payload"),
                         KafkaTestData.envelope("test_df", 0, 11L, "{\"errorMessage\":\"bad\"}")))
-                .apply(ParDo.of(new FilterValidPayloadDoFn("errorMessage", droppedOffsetTag))
-                        .withOutputTags(validTag, TupleTagList.of(droppedOffsetTag)));
+                .apply(ParDo.of(new FilterValidPayloadDoFn("errorMessage"))
+                        .withOutputTags(VALID_PAYLOAD_TAG, TupleTagList.of(DROPPED_INVALID_OFFSET_PAYLOAD_TAG)));
 
-        PAssert.that(output.get(validTag)).containsInAnyOrder(List.of(
+        PAssert.that(output.get(VALID_PAYLOAD_TAG)).containsInAnyOrder(List.of(
                 KafkaTestData.envelope("test_df", 0, 10L, "ok-payload")));
-        PCollection<KV<String, Long>> droppedOffsets = output.get(droppedOffsetTag)
+        PCollection<KV<String, Long>> droppedOffsets = output.get(DROPPED_INVALID_OFFSET_PAYLOAD_TAG)
                 .setCoder(KvCoder.of(StringUtf8Coder.of(), VarLongCoder.of()));
         PAssert.that(droppedOffsets).containsInAnyOrder(List.of(KV.of("test_df:0", 11L)));
 
