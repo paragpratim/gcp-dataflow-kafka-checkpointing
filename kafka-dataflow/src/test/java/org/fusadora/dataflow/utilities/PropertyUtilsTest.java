@@ -9,9 +9,9 @@ class PropertyUtilsTest {
     @Test
     void normalizeKafkaBootstrapServersStripsProtocolAndKeepsPort() {
         String bootstrapServers = PropertyUtils.normalizeKafkaBootstrapServers(
-                "SASL_SSL://pkc-ewzgj.europe-west4.gcp.confluent.cloud:9092");
+                "SASL_SSL://broker-1.confluent.cloud:9092");
 
-        assertEquals("pkc-ewzgj.europe-west4.gcp.confluent.cloud:9092", bootstrapServers);
+        assertEquals("broker-1.confluent.cloud:9092", bootstrapServers);
     }
 
     @Test

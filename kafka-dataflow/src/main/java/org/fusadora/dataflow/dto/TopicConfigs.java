@@ -7,7 +7,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Serial;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * org.fusadora.dataflow.dto.TopicConfigs
@@ -21,12 +23,10 @@ import java.util.*;
 @JsonPropertyOrder({"topicConfigs"})
 public class TopicConfigs extends BaseDto {
 
+    public static final String CONFIG_FILE_NAME = "topic-config.json";
     @Serial
     private static final long serialVersionUID = 1L;
-
     private static final Logger LOG = LoggerFactory.getLogger(TopicConfigs.class);
-    public static final String CONFIG_FILE_NAME = "topic-config.json";
-
     @JsonIgnore
     private final Map<String, Object> additionalProperties = new HashMap<>();
     @JsonProperty("topicConfigs")
@@ -47,16 +47,24 @@ public class TopicConfigs extends BaseDto {
     }
 
     @JsonProperty("topicConfigs")
-    public List<TopicConfig> getTopicConfigList() { return topicConfigList; }
+    public List<TopicConfig> getTopicConfigList() {
+        return topicConfigList;
+    }
 
     @JsonProperty("topicConfigs")
-    public void setTopicConfigList(List<TopicConfig> topicConfigList) { this.topicConfigList = topicConfigList; }
+    public void setTopicConfigList(List<TopicConfig> topicConfigList) {
+        this.topicConfigList = topicConfigList;
+    }
 
     @JsonAnyGetter
-    public Map<String, Object> getAdditionalProperties() { return this.additionalProperties; }
+    public Map<String, Object> getAdditionalProperties() {
+        return this.additionalProperties;
+    }
 
     @JsonAnySetter
-    public void setAdditionalProperty(String name, Object value) { this.additionalProperties.put(name, value); }
+    public void setAdditionalProperty(String name, Object value) {
+        this.additionalProperties.put(name, value);
+    }
 
     @Override
     public boolean equals(Object o) {

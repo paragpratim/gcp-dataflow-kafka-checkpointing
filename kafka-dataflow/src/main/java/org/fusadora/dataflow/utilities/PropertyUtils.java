@@ -34,8 +34,6 @@ public final class PropertyUtils {
     public static final String KAFKA_CONSUMER_GROUP_ID = "kafka.consumer.group.id";
     public static final String KAFKA_SASL_USERNAME = "kafka.sasl.username";
     public static final String KAFKA_SASL_PASSWORD = "kafka.sasl.password";
-    private static final String DEFAULT_KAFKA_SECURITY_PROTOCOL = "SASL_SSL";
-
     // Checkpoint
     public static final String CHECKPOINT_COLLECTION = "checkpoint.collection";
     public static final String CHECKPOINT_FIRESTORE_DATABASE_ID = "checkpoint.firestore.database.id";
@@ -43,6 +41,7 @@ public final class PropertyUtils {
     public static final String CHECKPOINT_COMMIT_INTERVAL_SECONDS = "checkpoint.commit.interval.seconds";
     public static final String OFFSET_GAP_TIMEOUT_SECONDS = "offset.gap.timeout.seconds";
     public static final String OFFSET_GAP_AUDIT_ENABLED = "offset.gap.audit.enabled";
+    private static final String DEFAULT_KAFKA_SECURITY_PROTOCOL = "SASL_SSL";
 
     private PropertyUtils() {
         throw new IllegalStateException("Utility class");

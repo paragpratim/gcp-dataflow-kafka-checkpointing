@@ -1,7 +1,7 @@
 package org.fusadora.dataflow.pipelines;
 
-import com.google.inject.Inject;
 import com.google.common.base.Preconditions;
+import com.google.inject.Inject;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.io.GenerateSequence;
 import org.apache.beam.sdk.transforms.FlatMapElements;
@@ -18,11 +18,7 @@ import org.fusadora.dataflow.utilities.TopicConfigLoader;
 import org.joda.time.Duration;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**

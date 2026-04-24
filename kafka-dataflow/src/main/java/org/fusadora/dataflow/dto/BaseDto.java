@@ -15,10 +15,9 @@ import java.io.Serializable;
  */
 public abstract class BaseDto implements Serializable {
 
+    protected static final ObjectMapper MAPPER = new ObjectMapper();
     @Serial
     private static final long serialVersionUID = 1L;
-
-    protected static final ObjectMapper MAPPER = new ObjectMapper();
 
     protected BaseDto() {
     }

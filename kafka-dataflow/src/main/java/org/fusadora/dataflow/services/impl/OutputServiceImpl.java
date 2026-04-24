@@ -24,6 +24,20 @@ import java.util.Map;
  * @since 04/12/2025
  */
 public class OutputServiceImpl implements OutputService {
+    private static Map<String, Object> getKafkaProducerConfigMap(String brokerHost) {
+        String jaasTemplate = "org.apache.kafka.common.security.plain.PlainLoginModule required username='%s' password='%s';";
+        String jaasCfg = String.format(jaasTemplate, PropertyUtils.getProperty(PropertyUtils.KAFKA_SASL_USERNAME)
+                , PropertyUtils.getProperty(PropertyUtils.KAFKA_SASL_PASSWORD));
+        Map<String, Object> kafkaProducerConfig = new HashMap<>();
+        kafkaProducerConfig.put("client.id", PropertyUtils.getProperty(PropertyUtils.KAFKA_CONSUMER_CLIENT_ID));
+        kafkaProducerConfig.put("security.protocol", PropertyUtils.resolveKafkaSecurityProtocol(brokerHost));
+        kafkaProducerConfig.put("sasl.jaas.config", jaasCfg);
+        kafkaProducerConfig.put("sasl.mechanism", "PLAIN");
+        kafkaProducerConfig.put("client.dns.lookup", "use_all_dns_ips");
+        kafkaProducerConfig.put("acks", "all");
+        return kafkaProducerConfig;
+    }
+
     @Override
     public WriteResult writeToBqFileLoad(PCollection<TableRow> input, String transformName, String bqTableName,
                                          TableSchema bqTableSchema, String partitionType) {
@@ -47,19 +61,5 @@ public class OutputServiceImpl implements OutputService {
                 .withProducerConfigUpdates(getKafkaProducerConfigMap(brokerHost))
                 .withKeySerializer(StringSerializer.class)
                 .withValueSerializer(StringSerializer.class));
-    }
-
-    private static Map<String, Object> getKafkaProducerConfigMap(String brokerHost) {
-        String jaasTemplate = "org.apache.kafka.common.security.plain.PlainLoginModule required username='%s' password='%s';";
-        String jaasCfg = String.format(jaasTemplate, PropertyUtils.getProperty(PropertyUtils.KAFKA_SASL_USERNAME)
-                , PropertyUtils.getProperty(PropertyUtils.KAFKA_SASL_PASSWORD));
-        Map<String, Object> kafkaProducerConfig = new HashMap<>();
-        kafkaProducerConfig.put("client.id", PropertyUtils.getProperty(PropertyUtils.KAFKA_CONSUMER_CLIENT_ID));
-        kafkaProducerConfig.put("security.protocol", PropertyUtils.resolveKafkaSecurityProtocol(brokerHost));
-        kafkaProducerConfig.put("sasl.jaas.config", jaasCfg);
-        kafkaProducerConfig.put("sasl.mechanism", "PLAIN");
-        kafkaProducerConfig.put("client.dns.lookup", "use_all_dns_ips");
-        kafkaProducerConfig.put("acks", "all");
-        return kafkaProducerConfig;
     }
 }

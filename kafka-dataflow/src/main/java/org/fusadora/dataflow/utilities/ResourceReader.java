@@ -38,9 +38,9 @@ public class ResourceReader {
     /**
      * Retrieve loaded resource and returns it
      *
-     * @param resourceName
-     * @return
-     * @throws IOException
+     * @param resourceName resource name to be loaded
+     * @return loaded resource as string
+     * @throws IOException if resource cannot be loaded
      */
     public static String getResource(String resourceName) throws IOException {
         if (StringUtils.isBlank(resourceName)) {
@@ -69,9 +69,9 @@ public class ResourceReader {
     /**
      * Reads and returns the resource.
      *
-     * @param resourceToLoad
-     * @return
-     * @throws IOException
+     * @param resourceToLoad resource name to be loaded
+     * @return loaded resource as string
+     * @throws IOException if resource cannot be loaded
      */
     private static String read(String resourceToLoad) throws IOException {
         InputStream is = ResourceReader.class.getResourceAsStream(resourceToLoad);
@@ -86,9 +86,9 @@ public class ResourceReader {
      * This method receives a InputStream , read the input streamline by line and
      * collect the lines in a String builder. Then return the string value.
      *
-     * @param is {@link InputStream}
-     * @return {@link String}
-     * @throws IOException
+     * @param is {@link InputStream} to be read
+     * @return {@link String}   representation of the input stream
+     * @throws IOException if the input stream cannot be read
      */
     public static String read(InputStream is) throws IOException {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
@@ -108,9 +108,9 @@ public class ResourceReader {
      * Generic method to read the resource and return it or return null if not
      * found.
      *
-     * @param resourceName
-     * @param tr
-     * @return
+     * @param resourceName resource name to be loaded
+     * @param tr           TypeReference of the resource to be read
+     * @return loaded resource as object of type T or null if not found
      */
     public <T> T readResourceOrNull(String resourceName, TypeReference<?> tr) {
         try {
@@ -124,10 +124,10 @@ public class ResourceReader {
     /**
      * Generic method to read the resource and return it.
      *
-     * @param resourceName
-     * @param tr
-     * @return
-     * @throws IOException
+     * @param resourceName resource name to be loaded
+     * @param tr           TypeReference of the resource to be read
+     * @return loaded resource as object of type T
+     * @throws IOException if resource cannot be loaded
      */
     public <T> T readResource(String resourceName, TypeReference<?> tr) throws IOException {
         String resource = getResource(resourceName);

@@ -7,7 +7,7 @@ import java.io.Serializable;
 import java.util.List;
 
 /**
- * Utility to read bigquery schema json file and convert it to a bigquery schema
+ * Utility to read Bigquery schema JSON file and convert it to a Bigquery schema
  * object.
  *
  * @author Parag Ghosh

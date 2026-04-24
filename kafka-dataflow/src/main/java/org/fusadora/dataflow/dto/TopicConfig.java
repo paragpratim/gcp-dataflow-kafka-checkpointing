@@ -52,25 +52,39 @@ public class TopicConfig extends BaseDto {
     }
 
     @JsonProperty("topicName")
-    public String getTopicName() { return topicName; }
+    public String getTopicName() {
+        return topicName;
+    }
 
     @JsonProperty("topicName")
-    public void setTopicName(String topicName) { this.topicName = topicName; }
+    public void setTopicName(String topicName) {
+        this.topicName = topicName;
+    }
 
     @JsonProperty("datasetName")
-    public String getDatasetName() { return datasetName; }
+    public String getDatasetName() {
+        return datasetName;
+    }
 
     @JsonProperty("datasetName")
-    public void setDatasetName(String datasetName) { this.datasetName = datasetName; }
+    public void setDatasetName(String datasetName) {
+        this.datasetName = datasetName;
+    }
 
     @JsonProperty("tableName")
-    public String getTableName() { return tableName; }
+    public String getTableName() {
+        return tableName;
+    }
 
     @JsonProperty("tableName")
-    public void setTableName(String tableName) { this.tableName = tableName; }
+    public void setTableName(String tableName) {
+        this.tableName = tableName;
+    }
 
     @JsonProperty("checkpointCommitIntervalSeconds")
-    public Long getCheckpointCommitIntervalSeconds() { return checkpointCommitIntervalSeconds; }
+    public Long getCheckpointCommitIntervalSeconds() {
+        return checkpointCommitIntervalSeconds;
+    }
 
     @JsonProperty("checkpointCommitIntervalSeconds")
     public void setCheckpointCommitIntervalSeconds(Long checkpointCommitIntervalSeconds) {
@@ -78,10 +92,14 @@ public class TopicConfig extends BaseDto {
     }
 
     @JsonAnyGetter
-    public Map<String, Object> getAdditionalProperties() { return this.additionalProperties; }
+    public Map<String, Object> getAdditionalProperties() {
+        return this.additionalProperties;
+    }
 
     @JsonAnySetter
-    public void setAdditionalProperty(String name, Object value) { this.additionalProperties.put(name, value); }
+    public void setAdditionalProperty(String name, Object value) {
+        this.additionalProperties.put(name, value);
+    }
 
     @Override
     public boolean equals(Object o) {

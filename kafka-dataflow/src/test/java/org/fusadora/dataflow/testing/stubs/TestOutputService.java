@@ -31,11 +31,10 @@ public class TestOutputService implements OutputService, Serializable {
 
     @Serial
     private static final long serialVersionUID = 1L;
-
-    private static Set<Long> failingOffsets = Set.of();
-    private static PCollection<TableRow> capturedRows;
     private static final List<String> KAFKA_WRITE_TOPICS = new ArrayList<>();
     private static final List<String> BQ_TABLE_NAMES = new ArrayList<>();
+    private static Set<Long> failingOffsets = Set.of();
+    private static PCollection<TableRow> capturedRows;
 
     public static void reset() {
         failingOffsets = Set.of();

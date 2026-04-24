@@ -41,6 +41,10 @@ public class RecordingCheckpointService implements CheckpointService, Serializab
         }
     }
 
+    private static String docId(String topic, int partition) {
+        return topic + ":" + partition;
+    }
+
     @Override
     public long getNextOffsetToRead(String topic, int partition) {
         return nextOffset(topic, partition);
@@ -62,10 +66,6 @@ public class RecordingCheckpointService implements CheckpointService, Serializab
     public void updateOffsetCheckpoint(String topic, int partition, long lastAckedOffset, String jobId) {
         NEXT_OFFSETS.merge(docId(topic, partition), lastAckedOffset + 1, Math::max);
         UPDATES.add(new CheckpointUpdate(topic, partition, lastAckedOffset, jobId));
-    }
-
-    private static String docId(String topic, int partition) {
-        return topic + ":" + partition;
     }
 
     public record CheckpointUpdate(String topic, int partition, long lastAckedOffset, String jobId) {

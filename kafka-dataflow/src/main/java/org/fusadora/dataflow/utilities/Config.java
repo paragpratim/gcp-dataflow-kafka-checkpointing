@@ -10,7 +10,6 @@ import org.fusadora.dataflow.exception.StaticUtilityException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.net.URL;
 import java.util.List;
 
@@ -35,15 +34,13 @@ public class Config {
      */
     private Config() throws ConfigurationException {
         super();
-        this.loadPropertiesFromFile(DEFAULT_CONFIG_FILE);
+        this.loadPropertiesFromFile();
     }
 
     /**
      * returns the singleton
      *
-     * @return
-     * @throws IOException
-     * @throws ConfigurationException
+     * @return Singleton instance of Config
      */
     protected static Config getInstance() {
 
@@ -70,8 +67,8 @@ public class Config {
      * Return a property for the provided key
      * </p>
      *
-     * @param key
-     * @return
+     * @param key String key to look up in the properties file
+     * @return Value for the provided key, or null if the key is not found
      */
     public static String getProperty(String key) {
 
@@ -83,8 +80,9 @@ public class Config {
      * Return a property for the provided key
      * </p>
      *
-     * @param key
-     * @return
+     * @param key          String key to look up in the properties file
+     * @param defaultValue Value to return if the key is not found in the properties file
+     * @return Value for the provided key, or defaultValue if the key is not found
      */
     public static String getProperty(String key, String defaultValue) {
 
@@ -96,8 +94,9 @@ public class Config {
      * Return a property for the provided key
      * </p>
      *
-     * @param key
-     * @return
+     * @param key          String key to look up in the properties file
+     * @param defaultValue Value to return if the key is not found in the properties file
+     * @return Value for the provided key, or defaultValue if the key is not found
      */
     public static Integer getIntegerProperty(String key, Integer defaultValue) {
 
@@ -105,9 +104,13 @@ public class Config {
     }
 
     /**
-     * @param key
-     * @param defaultValue
-     * @return
+     * <p>
+     * Return a property for the provided key
+     * </p>
+     *
+     * @param key          String key to look up in the properties file
+     * @param defaultValue Value to return if the key is not found in the properties file
+     * @return Value for the provided key, or defaultValue if the key is not found
      */
     public static Double getDoubleProperty(String key, Double defaultValue) {
 
@@ -115,9 +118,13 @@ public class Config {
     }
 
     /**
-     * @param key
-     * @param defaultValue
-     * @return
+     * <p>
+     * Return a property for the provided key
+     * </p>
+     *
+     * @param key          String key to look up in the properties file
+     * @param defaultValue Value to return if the key is not found in the properties file
+     * @return Value for the provided key, or defaultValue if the key is not found
      */
     public static Long getLongProperty(String key, Long defaultValue) {
 
@@ -125,9 +132,9 @@ public class Config {
     }
 
     /**
-     * @param key
-     * @param defaultValue
-     * @return
+     * @param key          String key to look up in the properties file
+     * @param defaultValue Value to return if the key is not found in the properties file
+     * @return Value for the provided key, or defaultValue if the key is not found
      */
     public static Boolean getBooleanProperty(String key, Boolean defaultValue) {
 
@@ -140,10 +147,9 @@ public class Config {
      * key = This property, has multiple, values <br>
      * will be put in a list
      *
-     * @param key
-     * @return
+     * @param key String key to look up in the properties file
+     * @return List of values for the provided key, or null if the key is not found
      */
-    @SuppressWarnings("rawtypes")
     public static List<Object> getList(String key) {
         return getInstance().getConfig().getList(key);
     }
@@ -153,14 +159,11 @@ public class Config {
      * Get a Property object from a file
      * </p>
      *
-     * @param fileName
-     * @return
-     * @throws IOException
-     * @throws ConfigurationException
+     * @throws ConfigurationException if there is an error loading the properties file
      */
-    private void loadPropertiesFromFile(String fileName) throws ConfigurationException {
+    private void loadPropertiesFromFile() throws ConfigurationException {
 
-        URL url = Thread.currentThread().getContextClassLoader().getResource(fileName);
+        URL url = Thread.currentThread().getContextClassLoader().getResource(Config.DEFAULT_CONFIG_FILE);
 
         Parameters params = new Parameters();
         FileBasedConfigurationBuilder<PropertiesConfiguration> builder =

@@ -28,10 +28,10 @@ public class GuiceInitialiser {
      *
      * @param clazz the class to get an instance of
      * @param <T>   the class type
-     * @return Guice initialised class
+     * @return Guice initialized class
      */
     public static <T> T getGuiceInitialisedClass(AbstractModule businessModule, Class<T> clazz) {
-        LOG.info("Creating guice injector [{}] for [{}]", businessModule.getClass().getName(), clazz.getName());
+        LOG.info("Creating Guice injector [{}] for [{}]", businessModule.getClass().getName(), clazz.getName());
         Injector injector = Guice.createInjector(businessModule);
 
         return injector.getInstance(clazz);
@@ -43,10 +43,10 @@ public class GuiceInitialiser {
      * @param clazz the class to get an instance of
      * @param <T>   the class type
      * @param name  the annotation name
-     * @return Guice initialised class
+     * @return Guice initialized class
      */
     public static <T> T getGuiceInitialisedClass(AbstractModule businessModule, Class<T> clazz, String name) {
-        LOG.info("Creating guice injector [{}] for [{}]", businessModule.getClass().getName(), clazz.getName());
+        LOG.info("Creating Guice injector [{}] for [{}] with name [{}]", businessModule.getClass().getName(), clazz.getName(), name);
         Injector injector = Guice.createInjector(businessModule);
 
         return injector.getInstance(Key.get(clazz, Names.named(name)));

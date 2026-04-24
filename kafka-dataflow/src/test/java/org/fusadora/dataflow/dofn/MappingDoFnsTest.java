@@ -57,7 +57,8 @@ class MappingDoFnsTest {
                 .apply(Create.of(
                         KafkaTestData.envelope("test_df", 0, 1L, "ok-payload"),
                         KafkaTestData.envelope("test_df", 0, 2L, "{\"errorMessage\":\"bad\"}")))
-                .apply(ParDo.of(new FilterValidPayloadDoFn("errorMessage")));
+                .apply(ParDo.of(new FilterValidPayloadDoFn("errorMessage"))
+                        .withOutputTags(VALID_PAYLOAD_TAG, TupleTagList.of(DROPPED_INVALID_OFFSET_PAYLOAD_TAG))).get(VALID_PAYLOAD_TAG);
 
         assertNotNull(output);
         PAssert.that(output).containsInAnyOrder(List.of(

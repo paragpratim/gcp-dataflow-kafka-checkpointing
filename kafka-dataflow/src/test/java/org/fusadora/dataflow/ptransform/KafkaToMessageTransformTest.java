@@ -5,8 +5,8 @@ import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.transforms.Create;
 import org.apache.beam.sdk.values.PCollection;
 import org.fusadora.dataflow.dto.KafkaEventEnvelope;
-import org.fusadora.dataflow.testing.stubs.TestInputService;
 import org.fusadora.dataflow.testing.KafkaTestData;
+import org.fusadora.dataflow.testing.stubs.TestInputService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

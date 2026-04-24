@@ -43,7 +43,7 @@ public class TestInputService implements InputService, Serializable {
 
     @Override
     public PCollection<KafkaRecord<String, String>> readFromKafka(Pipeline pipeline, String brokerIp, String topic,
-                                                                   String transformName) {
+                                                                  String transformName) {
         if (sourceTransform == null) {
             throw new IllegalStateException("TestInputService sourceTransform is not configured");
         }

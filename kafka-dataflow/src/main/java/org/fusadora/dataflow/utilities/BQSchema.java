@@ -15,24 +15,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.fusadora.dataflow.common.BQTableFieldSchemaConstants.CURRENCY_CODES_DOLLAR_REGEX;
-import static org.fusadora.dataflow.common.BQTableFieldSchemaConstants.CURRENCY_CODES_EURO_REGEX;
-import static org.fusadora.dataflow.common.BQTableFieldSchemaConstants.CURRENCY_CODE_DOLLAR_STRING;
-import static org.fusadora.dataflow.common.BQTableFieldSchemaConstants.CURRENCY_CODE_EURO_STRING;
-import static org.fusadora.dataflow.common.BQTableFieldSchemaConstants.INVALID_COLUMN_NAME_REGEX;
-import static org.fusadora.dataflow.common.BQTableFieldSchemaConstants.MODE_OPTIONAL;
-import static org.fusadora.dataflow.common.BQTableFieldSchemaConstants.MODE_REQUIRED;
-import static org.fusadora.dataflow.common.BQTableFieldSchemaConstants.TYPE_BOOLEAN;
-import static org.fusadora.dataflow.common.BQTableFieldSchemaConstants.TYPE_BYTES;
-import static org.fusadora.dataflow.common.BQTableFieldSchemaConstants.TYPE_DATE;
-import static org.fusadora.dataflow.common.BQTableFieldSchemaConstants.TYPE_DATETIME;
-import static org.fusadora.dataflow.common.BQTableFieldSchemaConstants.TYPE_FLOAT;
-import static org.fusadora.dataflow.common.BQTableFieldSchemaConstants.TYPE_INTEGER;
-import static org.fusadora.dataflow.common.BQTableFieldSchemaConstants.TYPE_NUMERIC;
-import static org.fusadora.dataflow.common.BQTableFieldSchemaConstants.TYPE_RECORD;
-import static org.fusadora.dataflow.common.BQTableFieldSchemaConstants.TYPE_STRING;
-import static org.fusadora.dataflow.common.BQTableFieldSchemaConstants.TYPE_TIME;
-import static org.fusadora.dataflow.common.BQTableFieldSchemaConstants.TYPE_TIMESTAMP;
+import static org.fusadora.dataflow.common.BQTableFieldSchemaConstants.*;
 
 /**
  * Utility to read a bigquery schema json file and convert it to a bigquery
@@ -190,15 +173,15 @@ public class BQSchema implements Serializable {
         }
         return switch (type.trim().toUpperCase()) {
             case TYPE_TIMESTAMP -> StandardSQLTypeName.TIMESTAMP;
-            case TYPE_INTEGER   -> StandardSQLTypeName.INT64;
-            case TYPE_NUMERIC   -> StandardSQLTypeName.NUMERIC;
-            case TYPE_FLOAT     -> StandardSQLTypeName.FLOAT64;
-            case TYPE_BOOLEAN   -> StandardSQLTypeName.BOOL;
-            case TYPE_BYTES     -> StandardSQLTypeName.BYTES;
-            case TYPE_DATE      -> StandardSQLTypeName.DATE;
-            case TYPE_TIME      -> StandardSQLTypeName.TIME;
-            case TYPE_DATETIME  -> StandardSQLTypeName.DATETIME;
-            default             -> StandardSQLTypeName.STRING;
+            case TYPE_INTEGER -> StandardSQLTypeName.INT64;
+            case TYPE_NUMERIC -> StandardSQLTypeName.NUMERIC;
+            case TYPE_FLOAT -> StandardSQLTypeName.FLOAT64;
+            case TYPE_BOOLEAN -> StandardSQLTypeName.BOOL;
+            case TYPE_BYTES -> StandardSQLTypeName.BYTES;
+            case TYPE_DATE -> StandardSQLTypeName.DATE;
+            case TYPE_TIME -> StandardSQLTypeName.TIME;
+            case TYPE_DATETIME -> StandardSQLTypeName.DATETIME;
+            default -> StandardSQLTypeName.STRING;
         };
     }
 
