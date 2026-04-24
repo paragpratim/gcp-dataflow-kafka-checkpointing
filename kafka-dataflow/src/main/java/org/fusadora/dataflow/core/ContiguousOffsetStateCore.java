@@ -65,6 +65,8 @@ public final class ContiguousOffsetStateCore<T> implements Serializable {
      * @param emitter        A Consumer that accepts an event to be emitted.
      * @return The new expected offset after emitting contiguous events.
      */
+    @SuppressWarnings("java:S2583")
+    //event == null : bufferedState.get(current).read() returns default value which is null
     public long emitContiguous(long expectedOffset, MapState<Long, T> bufferedState, Consumer<T> emitter) {
         long current = expectedOffset;
         while (true) {
