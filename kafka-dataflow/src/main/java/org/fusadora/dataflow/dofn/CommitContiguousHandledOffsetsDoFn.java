@@ -4,14 +4,7 @@ import org.apache.beam.sdk.coders.VarLongCoder;
 import org.apache.beam.sdk.metrics.Counter;
 import org.apache.beam.sdk.metrics.Distribution;
 import org.apache.beam.sdk.metrics.Metrics;
-import org.apache.beam.sdk.state.MapState;
-import org.apache.beam.sdk.state.StateSpec;
-import org.apache.beam.sdk.state.StateSpecs;
-import org.apache.beam.sdk.state.TimeDomain;
-import org.apache.beam.sdk.state.Timer;
-import org.apache.beam.sdk.state.TimerSpec;
-import org.apache.beam.sdk.state.TimerSpecs;
-import org.apache.beam.sdk.state.ValueState;
+import org.apache.beam.sdk.state.*;
 import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.values.KV;
 import org.fusadora.dataflow.core.ContiguousOffsetStateCore;
@@ -247,8 +240,6 @@ public class CommitContiguousHandledOffsetsDoFn extends DoFn<KV<String, Long>, V
         long startNanos = System.nanoTime();
         checkpointService.updateOffsetCheckpoint(partitionRef.topic, partitionRef.partition, pendingAckOffset, jobId);
         checkpointServiceCallLatencyMs.update((System.nanoTime() - startNanos) / 1_000_000L);
-        LOG.info("Checkpoint updated for {}:{} lastAckedOffset={}",
-                partitionRef.topic, partitionRef.partition, pendingAckOffset);
         pendingAckOffsetState.clear();
     }
 
