@@ -69,7 +69,7 @@ jobs:
 
       - name: Build Dataflow pipeline with Maven
         working-directory: kafka-dataflow
-        run: mvn clean package -DskipTests -P ${{ env.ENVIRONMENT }}
+        run: mvn clean package -P ${{ env.ENVIRONMENT }}
 
       - name: Configure Docker for Artifact Registry
         run: |
