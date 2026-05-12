@@ -1,3 +1,4 @@
+[![Build and Push Dataflow Image](https://github.com/paragpratim/gcp-dataflow-kafka-checkpointing/actions/workflows/dataflow-build.yml/badge.svg)](https://github.com/paragpratim/gcp-dataflow-kafka-checkpointing/actions/workflows/dataflow-build.yml)
 # GCP Dataflow Kafka Checkpointing
 
 This repository provides a robust Apache Beam/Dataflow pipeline for ingesting data from Kafka to BigQuery, featuring:
